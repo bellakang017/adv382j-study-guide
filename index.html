@@ -1727,6 +1727,7 @@ function MCQuiz({ onScoreUpdate }) {
   const [showExplanation, setShowExplanation] = useState(false);
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20 * 60);
+  const [reviewMode, setReviewMode] = useState(false);
   const mcStartTime = useRef(null);
 
   const startQuiz = () => {
@@ -1767,8 +1768,6 @@ function MCQuiz({ onScoreUpdate }) {
       </div>
     );
   }
-
-  const [reviewMode, setReviewMode] = useState(false);
 
   if (finished) {
     const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct ? 1 : 0), 0);
