@@ -1,13 +1,2296 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>adv382j-study-guide</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADV 382J Exam 2 — Study Lab</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Favicon: canvas-generated "A" -->
+  <script>
+    document.fonts.ready.then(function() {
+      var c = document.createElement("canvas");
+      c.width = 32; c.height = 32;
+      var x = c.getContext("2d");
+      x.beginPath();
+      x.roundRect(0, 0, 32, 32, 6);
+      x.fillStyle = "#FFFFFF";
+      x.fill();
+      x.font = "700 20px 'Plus Jakarta Sans', sans-serif";
+      x.fillStyle = "#D97706";
+      x.textAlign = "center";
+      x.textBaseline = "middle";
+      x.fillText("A", 16, 17);
+      var link = document.createElement("link");
+      link.rel = "icon";
+      link.href = c.toDataURL("image/png");
+      document.head.appendChild(link);
+    });
+  </script>
+
+  <!-- React 18 + ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase v10 (compat, CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOGA1jXqQ_zQcaauQ3WaIWAStb4YP-7Jw",
+      authDomain: "adv382j-exam2-studyg.firebaseapp.com",
+      projectId: "adv382j-exam2-studyg",
+      storageBucket: "adv382j-exam2-studyg.firebasestorage.app",
+      messagingSenderId: "461122227469",
+      appId: "1:461122227469:web:4157dfde1ab696a2ca7444"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window._db = firebase.firestore();
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { width: 100%; min-height: 100vh; }
+    body {
+      background: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #374151;
+      font-size: 15px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+    ::selection { background: rgba(15, 15, 15, 0.08); }
+    button { transition: all 0.15s ease; cursor: pointer; }
+    textarea {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      resize: vertical;
+    }
+    @media (max-width: 768px) {
+      body { font-size: 16px; padding: 0 16px; }
+      .sidebar-overlay {
+        position: fixed !important;
+        z-index: 50 !important;
+        top: 45px !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 260px !important;
+        box-shadow: 4px 0 12px rgba(0,0,0,0.08) !important;
+      }
+    }
+    @media print {
+      header, nav, aside, footer, button, .no-print { display: none !important; }
+      body { background: white !important; font-size: 12pt; color: black !important; }
+      #root > div { background: white !important; }
+      main { max-width: 100% !important; padding: 0 !important; }
+      div[style] { box-shadow: none !important; max-height: none !important; overflow: visible !important; display: block !important; }
+      table { page-break-inside: avoid; }
+      section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useReducer, useCallback, useRef } = React;
+
+// ═══════════════════════════════════════════════════════════════
+//  DESIGN TOKENS — shadcn/docs palette
+// ═══════════════════════════════════════════════════════════════
+
+const C = {
+  fg:        "#0F0F0F",
+  body:      "#374151",
+  muted:     "#6B7280",
+  faint:     "#9CA3AF",
+  rule:      "#E5E7EB",
+  hover:     "#F4F4F5",
+  card:      "#FAFAFA",
+  white:     "#FFFFFF",
+  gold:      "#B4975A",
+  goldLight: "#D4C49A",
+  red:       "#8B2332",
+  green:     "#2E6B50",
+  blue:      "#2B6CB0",
+  correctBg: "#F0FDF4",
+  incorrectBg: "#FEF2F2",
+  timerBg:   "#FFFBEB",
+};
+
+const chapterColor = {
+  "ch11-12": "#2B6CB0",
+  "ch13":    "#B4975A",
+  "ch14":    "#8B2332",
+  "article": "#2E6B50",
+  "integration": "#6B7280",
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  KEY TERM HIGHLIGHTING
+// ═══════════════════════════════════════════════════════════════
+
+const HL = {
+  gold: { color: "#B4975A", fontWeight: 700 },   // theories/models
+  blue: { color: "#2B6CB0", fontWeight: 600 },    // scholars
+  red:  { color: "#8B2332", fontWeight: 600 },    // traps/warnings
+  green:{ color: "#2E6B50", fontWeight: 600 },    // exam tips
+};
+
+const hlRules = [
+  // Theories & Models (gold bold)
+  { pattern: /\b(EPPM|Extended Parallel Process Model|Transportation Theory|ELM|Elaboration Likelihood Model|Prospect Theory|Communication Accommodation Theory|CAT|Inoculation Theory)\b/g, style: HL.gold },
+  { pattern: /\b(Internalization|Compliance|Identification|Danger control|Fear control|Global reflection|Transportation)\b/g, style: HL.gold },
+  { pattern: /\b(Response efficacy|Self-efficacy|Severity|Susceptibility)\b/g, style: HL.gold },
+  { pattern: /\b(PROCESS Model [467]|Model [467])\b/g, style: HL.gold },
+
+  // Scholar names (blue)
+  { pattern: /\b(Witte|Kim Witte|Green & Brock|Hamby & Brinberg|H&B|Milgram|Kelman|Kahneman & Tversky|Baumrind|Burger|Graesser, Singer, & Trabasso|Schwarz & Clore|Fritz & MacKinnon|Petty & Cacioppo|Dr\. Oh)\b/g, style: HL.blue },
+
+  // Traps & Warnings (red)
+  { pattern: /(Fear control sounds positive but[^.]*FAILURE|[Nn]on-refutational two-sided can BACKFIRE|BACKFIRE|NAMING TRAP|TRAP:|fear control = [^.]*FAILURE|persuasion FAILURE|message REJECTION|Fear control = managing the EMOTION[^.]*message = FAILURE)/g, style: HL.red },
+  { pattern: /\b(NOT a component|NOT a psychological|NOT equal|NOT statistically significant|NOT a static trait|does NOT equal|does NOT refute|does NOT include|NOT mediator|NOT the emotion|NOT the message)\b/g, style: HL.red },
+
+  // Exam tips (green)
+  { pattern: /(covariate, not mediator|COVARIATE|KEY MEDIATOR|CONFIRMED EXAM|HIGH PRIORITY|peripheral cue|central argument)/g, style: HL.green },
+];
+
+function highlightText(text) {
+  if (!text || typeof text !== "string") return text;
+  const parts = [{ text, style: null }];
+
+  for (const rule of hlRules) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (parts[i].style !== null) continue; // already styled
+      const seg = parts[i].text;
+      const splits = [];
+      let lastIdx = 0;
+      let m;
+      const rx = new RegExp(rule.pattern.source, rule.pattern.flags);
+      while ((m = rx.exec(seg)) !== null) {
+        if (m.index > lastIdx) splits.push({ text: seg.slice(lastIdx, m.index), style: null });
+        splits.push({ text: m[0], style: rule.style });
+        lastIdx = rx.lastIndex;
+      }
+      if (splits.length > 0) {
+        if (lastIdx < seg.length) splits.push({ text: seg.slice(lastIdx), style: null });
+        parts.splice(i, 1, ...splits);
+      }
+    }
+  }
+
+  if (parts.length === 1 && parts[0].style === null) return text;
+  return React.createElement(React.Fragment, null,
+    ...parts.map((p, i) =>
+      p.style ? React.createElement("span", { key: i, style: p.style }, p.text) : p.text
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — Study Tab (from Complete Study Guide V1)
+// ═══════════════════════════════════════════════════════════════
+
+const chapters = [
+  {
+    id: "ch11-12",
+    label: "Ch 11-12",
+    title: "Source Factors in Persuasion",
+    desc: "Authority, Credibility, and Attractiveness",
+    topics: [
+      {
+        id: "three-processes",
+        label: "Three Communicator Processes",
+        cards: [
+          {
+            title: "1. Three Communicator Processes (Overview)",
+            sections: [
+              { type: "define", text: "There is no single defining characteristic of effective communicators. Instead, communicators influence audiences through three distinct psychological processes (p. 228)." },
+              { type: "mechanism", text: "Authority produces compliance (external, fragile). Credibility produces internalization (value-based, durable). Attractiveness produces identification (relational, moderate durability)." },
+              { type: "table", headers: ["", "Authority", "Credibility", "Attractiveness"],
+                rows: [
+                  ["Process", "Compliance", "Internalization", "Identification"],
+                  ["Why audience changes", "To gain rewards / avoid punishment", "Message aligns with own values", "Desire to emulate the source"],
+                  ["Motivation", "External", "Internal, value-based", "Relational"],
+                  ["Durability", "Fragile — depends on surveillance", "Durable — value-based", "Moderate — depends on continued liking"],
+                  ["Key cues", "Position in social structure, trappings", "Expertise + trustworthiness + goodwill", "Physical appeal, likability, similarity"],
+                ]
+              },
+              { type: "exam", text: "MC scenario-matching: 'Which process best explains why...?' Ask: did they change because they HAD to (compliance), because it MADE SENSE (internalization), or because they LIKE the source (identification)?" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "authority",
+        label: "Authority and Milgram",
+        cards: [
+          {
+            title: "2. Authority → Compliance",
+            sections: [
+              { type: "define", text: "Authority emanates from a person's perceived position in a social structure, granting the legitimate 'right to prescribe behavior' (p. 231). It is NOT a psychological or interpersonal construct — it is structural (p. 243)." },
+              { type: "mechanism", text: "Produces compliance — outward conformity to gain rewards or avoid punishment, without necessarily changing private attitudes. Fragile; dependent on surveillance or continued presence of authority." },
+              { type: "exam", text: "Having absolute authority (dictator, parent) does NOT equal having credibility. Authority can make you comply without ever changing your mind (p. 243)." },
+            ],
+          },
+          {
+            title: "3. Milgram Obedience Paradigm",
+            sections: [
+              { type: "define", text: "Experimental paradigm demonstrating ordinary individuals will administer what they believe are harmful electric shocks (up to 450V) when instructed by a legitimate authority. Psychiatrists predicted 1 in 1,000; in reality, more than 65% went to maximum voltage (p. 229-230)." },
+              { type: "mechanism", text: "Four explanations for compliance: (1) Early socialization — trained from childhood to value obedience. (2) Trappings of authority — peripheral cues creating legitimacy: Yale prestige, lab coat, equipment. (3) Binding forces — psychological lock-in: lacked expertise to challenge, feared refusal. (4) Power of the situation — foot-in-the-door escalation (15V → 450V), fast pace limited reflection." },
+              { type: "exam", text: "Trappings = why you START obeying (external legitimacy cues). Binding forces = why you KEEP obeying (internal psychological escalation). Burger 2009 replication: 70% continued past 150V vs. 82.5% in Milgram — difference NOT statistically significant. Baumrind (1964) critique helped establish research ethics rules." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "credibility",
+        label: "Credibility → Internalization",
+        cards: [
+          {
+            title: "4. Credibility → Internalization",
+            sections: [
+              { type: "define", text: "The attitude toward a source of communication held at a given time by a receiver. A psychological, interpersonal, and dynamic communication variable that must be earned through interaction — not a static trait (p. 243-246)." },
+              { type: "mechanism", text: "Induces internalization — individuals accept recommendations because they are congruent with their internal beliefs and value systems. Produces durable attitude change. Three core components: Expertise (perceived knowledge and ability), Trustworthiness (perceived honesty and character), Goodwill (perceived caring and empathy toward the audience)." },
+              { type: "exam", text: "'Which is NOT a core component of credibility?' — Attractiveness is NOT a component. The three are expertise, trustworthiness, goodwill." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "attractiveness",
+        label: "Attractiveness → Identification",
+        cards: [
+          {
+            title: "5. Attractiveness → Identification",
+            sections: [
+              { type: "define", text: "Physical attractiveness captures attention, elicits pleasant affect, and often serves as a peripheral cue in persuasion (p. 255-257)." },
+              { type: "mechanism", text: "Identification — recipients adopt attitudes/behaviors to feel psychologically closer to a liked or similar source. Four reasons it works: (1) more attention to attractive speakers, (2) merge pleasant affect with message, (3) identify with communicator, (4) assume they are better speakers." },
+              { type: "table", headers: ["Attractiveness Matters MORE", "Attractiveness Matters LESS"],
+                rows: [
+                  ["Low involvement — peripheral cue for quick decisions", "Deeply felt / consequential attitudes — central thinking overrides"],
+                  ["Appearance-related products — becomes CENTRAL argument", "Negative expectancy violation — inappropriate for role"],
+                  ["High self-monitors — focused on image", "Short-lived effects — fails to integrate with attitude"],
+                  ["Positive expectancy violation — defies a stereotype", ""],
+                  ["Capturing initial attention — breaks clutter", ""],
+                ]
+              },
+              { type: "exam", text: "HIGH PRIORITY. 'Under which condition would attractiveness be MOST effective?' → Appearance-related products (it becomes a central argument, not merely peripheral)." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "ch13",
+    label: "Ch 13",
+    title: "Fundamentals of the Message",
+    desc: "Sidedness, Framing, Speech, Narratives, Transportation",
+    topics: [
+      {
+        id: "sidedness",
+        label: "Message Sidedness",
+        cards: [
+          {
+            title: "6. Message Sidedness",
+            sections: [
+              { type: "define", text: "One-sided message presents only pro-arguments. Two-sided message acknowledges opposing arguments, then refutes or contextualizes them (p. 269-270)." },
+              { type: "mechanism", text: "Two-sided (refutational) enhances perceived trustworthiness — signaling honesty. Connected to inoculation theory: pre-exposing audience to weakened counterarguments builds resistance to future persuasion." },
+              { type: "table", headers: ["One-Sided", "Two-Sided (Refutational)"],
+                rows: [
+                  ["Pro-arguments only", "Acknowledges AND refutes opposition"],
+                  ["Better when audience already strongly agrees", "Better when audience knows or will encounter counterarguments"],
+                  ["Simpler", "Enhances credibility + builds inoculation"],
+                ]
+              },
+              { type: "exam", text: "A two-sided message that does NOT refute the opposition can BACKFIRE — gives ammunition without rebuttal. Example: Domino's 'Oh Yes We Did' — admitted pizza was bad, showed improvement. Two-sided refutational → credibility boost." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "framing",
+        label: "Framing",
+        cards: [
+          {
+            title: "7. Framing",
+            sections: [
+              { type: "define", text: "Selecting some aspects of a perceived reality and making them more salient to promote a particular problem definition, causal interpretation, or moral evaluation (p. 279-282). Rooted in Kahneman & Tversky's prospect theory (Nobel Prize, 2002)." },
+              { type: "mechanism", text: "Same facts, different presentation → different decisions. Loss-framed emphasizes what you LOSE by NOT acting. Gain-framed emphasizes what you GAIN by acting." },
+              { type: "table", headers: ["Loss-Framed", "Gain-Framed"],
+                rows: [
+                  ["Costs of NOT acting", "Benefits of acting"],
+                  ["More effective: audience feels vulnerable, outcomes uncertain", "More effective: prevention behaviors (sunscreen, dental hygiene)"],
+                  ["Example: 'Know the facts about smoking' (risk/loss)", "Example: 'Know the benefits of quitting' (reward)"],
+                ]
+              },
+              { type: "exam", text: "TRAP: 'Without sunscreen you risk burns' = LOSS-framed (costs of inaction). 'Sunscreen keeps skin healthy' = GAIN-framed. Persuaders should frame based on the AUDIENCE's values and frames, not their own." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "speech",
+        label: "Speed of Speech / Powerful Speech",
+        cards: [
+          {
+            title: "8. Speed of Speech",
+            sections: [
+              { type: "define", text: "Speech rate's effect on persuasion depends on context — not uniformly positive or negative (p. 283-285)." },
+              { type: "mechanism", text: "Fast speech captures attention and signals competence (peripheral cue under low involvement). Slow speech conveys empathy for sensitive issues and provides reassurance during crises. Communication Accommodation Theory (CAT): speakers adapt rate, tone, vocabulary to match audience style — a convergence strategy to reduce social distance." },
+              { type: "exam", text: "CAT connects to Ch 12 similarity/liking → identification. Speech rate is context-dependent, not universally better fast or slow." },
+            ],
+          },
+          {
+            title: "9. Powerful Speech",
+            sections: [
+              { type: "define", text: "Characterized by the ABSENCE of 'powerless' linguistic features (p. 285-286): hesitations ('uh,' 'um'), hedges ('sort of,' 'kind of'), tag questions ('don't you think?'), disclaimers ('I'm no expert, but...')." },
+              { type: "mechanism", text: "Powerful speech → perceived competence, credibility, persuasion. Powerless speech → uncertainty, distraction." },
+              { type: "exam", text: "CAVEAT: If powerful speech comes across as controlling or demeaning → provokes psychological reactance (p. 289). Same reactance mechanism as excessive guilt appeals (Ch 14)." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "narrative",
+        label: "Narratives and Transportation",
+        cards: [
+          {
+            title: "10. Why and How Narratives Persuade",
+            sections: [
+              { type: "define", text: "A narrative is a cohesive story with identifiable characters, temporal sequence, causal chain, and conflict/resolution. Can be real or fiction (p. 273-274)." },
+              { type: "mechanism", text: "Unlike argument-based persuasion (cognitive elaboration), narratives operate through affective processes: character identification, emotional engagement, vivid imagery. Reduces counterarguing via immersion." },
+              { type: "table", headers: ["Narrative Persuasion", "Argument-Based Persuasion"],
+                rows: [
+                  ["Affective/emotional processes", "Cognitive elaboration (ELM central route)"],
+                  ["Characters, plot, conflict", "Statistics, evidence, logic"],
+                  ["Reduces counterarguing via immersion", "Invites counterarguing"],
+                  ["Vivid, memorable imagery", "Abstract, harder to recall"],
+                ]
+              },
+              { type: "exam", text: "Narratives are more memorable because of vivid imagery vs. abstract statistics." },
+            ],
+          },
+          {
+            title: "11. Transportation Theory",
+            sections: [
+              { type: "define", text: "Green & Brock (2000) — narratives transport individuals to different mental arenas. When completely immersed, the normal process of counterarguing is inhibited (p. 276-277)." },
+              { type: "mechanism", text: "Three mechanisms of immersion: (1) Vivid mental imagery — story creates pictures in the mind. (2) Emotional engagement — feeling what characters feel. (3) Focused attention — cognitive absorption in the storyline. Highly transported individuals are more likely to alter beliefs to be consistent with the narrative." },
+              { type: "exam", text: "Transportation = DURING-reading (online) process. Distinct from global reflection (POST-reading). Hamby & Brinberg treat transportation as a COVARIATE, not mediator." },
+            ],
+          },
+          {
+            title: "12. How to Build a Successful Brand Narrative",
+            sections: [
+              { type: "define", text: "A successful brand narrative contains identifiable characters, temporal sequence, and conflict/resolution. It facilitates transportation through vivid imagery, emotional engagement, and focused attention (pp. 277-279)." },
+              { type: "mechanism", text: "Leverages source credibility/attractiveness of the brand persona. Must create genuine character identification — not just an ad with a storyline, but a story that audiences lose themselves in." },
+              { type: "exam", text: "Potential SA topic. Check textbook pp. 277-279 or lecture slides for additional principles." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "ch14",
+    label: "Ch 14",
+    title: "Emotional Message Appeals",
+    desc: "Fear, Guilt, EPPM, Efficacy, and Framing",
+    topics: [
+      {
+        id: "fear-def",
+        label: "Fear vs. Fear Appeal",
+        cards: [
+          {
+            title: "13. Fear vs. Fear Appeal",
+            sections: [
+              { type: "define", text: "Fear = internal emotional reaction (inside the receiver), both psychological and physiological. Fear appeal = external persuasive message (a communication strategy designed to scare people into changing attitudes) (p. 301)." },
+              { type: "mechanism", text: "Fear is aroused when a serious, personally relevant threat is perceived. A fear appeal tries to conjure negative consequences — but the emotion (fear) and the message (fear appeal) are distinct constructs." },
+              { type: "exam", text: "TRAP: 'Fear appeal is the emotional state aroused by a threatening message' → FALSE. That describes fear. Fear appeal is the message itself." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "invulnerability",
+        label: "Illusion of Invulnerability",
+        cards: [
+          {
+            title: "14. Illusion of Invulnerability",
+            sections: [
+              { type: "define", text: "The optimistic belief that one is less likely to experience negative life events than others (p. 303). The biggest psychological barrier that makes people ignore fear appeal messages." },
+              { type: "mechanism", text: "Three reasons: (1) Denial of reality — refuse to admit misfortune could happen to them. (2) Stereotyping the victim — hold a stereotype of 'the kind of person' bad things happen to and exclude themselves. (3) Temporal separation of self — enjoy risky pleasures now, offload consequences to 'future, more mature self.'" },
+              { type: "exam", text: "The illusion is strongest among younger audiences (temporal separation is most salient)." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "eppm",
+        label: "EPPM (Extended Parallel Process Model)",
+        cards: [
+          {
+            title: "15. Extended Parallel Process Model (EPPM)",
+            sections: [
+              { type: "define", text: "Kim Witte's framework — two parallel processes (danger control, fear control) driven by the interaction of perceived threat and perceived efficacy (p. 306, 308)." },
+              { type: "mechanism", text: "Stage 1 — Threat Appraisal: Severity ('How bad is it?') + Susceptibility ('How likely is it to happen to me?'). If perceived threat is LOW → message ignored. If HIGH → Stage 2. Stage 2 — Efficacy Appraisal: Response efficacy ('Does the solution work?') + Self-efficacy ('Can I do it?')." },
+              { type: "table", headers: ["", "High Efficacy", "Low Efficacy"],
+                rows: [
+                  ["High Threat", "DANGER CONTROL (success)", "FEAR CONTROL (failure)"],
+                  ["Low Threat", "Message ignored", "Message ignored"],
+                ]
+              },
+              { type: "exam", text: "The 2x2 matrix is the heart of EPPM. Know each quadrant cold." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "dc-fc",
+        label: "Danger Control vs. Fear Control",
+        cards: [
+          {
+            title: "16. Danger Control vs. Fear Control",
+            sections: [
+              { type: "define", text: "Two parallel processes in EPPM, triggered by different combinations of threat and efficacy." },
+              { type: "mechanism", text: "Danger control is COGNITIVE — focuses on the external PROBLEM. Triggered by high threat + HIGH efficacy → protection motivation → message ACCEPTANCE → behavior change (success). Fear control is EMOTIONAL — focuses on the internal FEELING. Triggered by high threat + LOW efficacy → defensive motivation → message REJECTION → denial, avoidance (failure)." },
+              { type: "table", headers: ["", "Danger Control", "Fear Control"],
+                rows: [
+                  ["Process type", "Cognitive", "Emotional"],
+                  ["Focus", "External — the PROBLEM", "Internal — the FEELING"],
+                  ["Trigger", "High threat + HIGH efficacy", "High threat + LOW efficacy"],
+                  ["Motivation", "Protection motivation", "Defensive motivation"],
+                  ["Outcome", "Message ACCEPTANCE → behavior change", "Message REJECTION → denial, avoidance"],
+                ]
+              },
+              { type: "exam", text: "NAMING TRAP: 'Fear control' sounds positive ('I'm controlling my fear!'). It is NOT. Fear control = trying to manage the uncomfortable emotion by avoiding/denying the message = persuasion FAILURE." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "efficacy",
+        label: "Self-Efficacy vs. Response Efficacy",
+        cards: [
+          {
+            title: "17. Gain-Framed vs. Loss-Framed (Health-Specific)",
+            sections: [
+              { type: "define", text: "Ch 14 applies Ch 13 framing theory to health contexts with specific boundary conditions (p. 312)." },
+              { type: "mechanism", text: "Gain-framed: benefits of adopting the behavior → more effective for PREVENTION behaviors (sunscreen, dental hygiene). Loss-framed: costs of NOT adopting → more effective when audience feels VULNERABLE or outcomes are UNCERTAIN." },
+              { type: "exam", text: "Cross-reference to Ch 13 framing: same Kahneman & Tversky theory, Ch 14 adds health-specific boundary conditions." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "guilt",
+        label: "Guilt Appeals",
+        cards: [
+          {
+            title: "18. Effective Guilt-Appeal Messages",
+            sections: [
+              { type: "define", text: "A persuasive message that arouses guilt to induce helping behavior, relying on empathy and efficacy (p. 318)." },
+              { type: "mechanism", text: "Success conditions: (1) Empathy — elicit empathy for the target to activate social norms and responsibility. (2) Efficacy — convince audience the recommended action will solve the problem AND relieve their guilt. Backfire condition: Excessive guilt or anger → psychological reactance → audience rejects the recommended behavior." },
+              { type: "exam", text: "Same reactance mechanism as overly controlling powerful speech (Ch 13). If guilt feels manipulative, audience pushes back." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "article",
+    label: "Hamby & Brinberg",
+    title: "Hamby & Brinberg (2016): Happily Ever After",
+    desc: "Ending Valence, Global Reflection, and Narrative Persuasion",
+    topics: [
+      {
+        id: "core-finding",
+        label: "Core Argument",
+        cards: [
+          {
+            title: "19. Core Argument",
+            sections: [
+              { type: "define", text: "In cautionary narratives, positive endings are more persuasive than negative endings because they facilitate global reflection — a post-reading inference process — which mediates belief change. This contradicts negativity bias in argument-based persuasion." },
+              { type: "mechanism", text: "Causal chain: Ending Valence (positive) → Positive Affect (PANAS, Study 1b) → Global Reflection (infer the moral) → Story-Consistent Beliefs (DV)." },
+              { type: "exam", text: "The key insight: in narratives, positive beats negative. In arguments, negative information is more persuasive. Different persuasion processes." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "studies",
+        label: "Three-Study Design",
+        cards: [
+          {
+            title: "20. Three-Study Design",
+            sections: [
+              { type: "define", text: "Three between-subjects experiments with progressively complex mediation models, each using a different narrative stimulus for generalizability." },
+              { type: "table", headers: ["", "Study 1a", "Study 1b", "Study 2"],
+                rows: [
+                  ["N", "116", "72", "149"],
+                  ["Design", "Between-subjects", "Between-subjects", "2x2 between-subjects"],
+                  ["IV", "Ending valence", "Ending valence", "Ending valence x Epilogue"],
+                  ["Mediator", "Global reflection", "Affect → Global reflection (serial)", "Global reflection"],
+                  ["Moderator", "—", "—", "Epilogue"],
+                  ["PROCESS Model", "4 (simple mediation)", "6 (serial mediation)", "7 (moderated mediation)"],
+                  ["Stimulus", "Pesticide exposure", "Literacy program", "Fire safety"],
+                ]
+              },
+              { type: "exam", text: "Design logic: basic → serial → moderated mediation. Each study uses a different stimulus to test generalizability. Know which PROCESS model goes with which study." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "global-reflection",
+        label: "Global Reflection",
+        cards: [
+          {
+            title: "21. Global Reflection",
+            sections: [
+              { type: "define", text: "A post-narrative process where readers infer the overall moral or message of a story. Adapted from Graesser, Singer, & Trabasso (1991). Measured with 3 self-report items: 'I thought about the meaning/message of the story' and 'what the story was trying to express.'" },
+              { type: "mechanism", text: "Post-reading (offline) process distinct from both transportation (during-reading) and ELM elaboration (evaluating explicit arguments). Global reflection infers implicit morals; ELM evaluates explicit arguments." },
+              { type: "table", headers: ["", "Transportation", "Global Reflection", "ELM Elaboration"],
+                rows: [
+                  ["When", "During reading (online)", "Post-reading (offline)", "During message processing"],
+                  ["Process", "Immersion in story world", "Inferring the overall moral", "Evaluating explicit arguments"],
+                  ["Function", "Reduces counterarguing", "Facilitates meaning-making", "Increases argument scrutiny"],
+                  ["Role in paper", "COVARIATE", "KEY MEDIATOR", "Not tested"],
+                  ["Scholars", "Green & Brock (2000)", "Hamby & Brinberg (2016)", "Petty & Cacioppo (1983)"],
+                ]
+              },
+              { type: "exam", text: "Why transportation is a covariate, not mediator: ending valence is a POST-reading manipulation. Transportation occurs DURING reading. Authors argue it cannot mediate an effect that happens after it has already occurred." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "epilogue",
+        label: "Epilogue Boundary Condition",
+        cards: [
+          {
+            title: "22. Epilogue Boundary Condition (Study 2)",
+            sections: [
+              { type: "define", text: "When an epilogue (explicit moral summary) is provided, global reflection's mediating role disappears. Ending valence no longer affects the reflection → beliefs path." },
+              { type: "mechanism", text: "The epilogue hands the moral directly to the audience → no inference needed → reflection is unnecessary. Practical paradox: most real PSAs include explicit messages/CTAs → most real campaigns operate in the epilogue condition → the core finding may not apply in practice." },
+              { type: "exam", text: "Unanswered question: which produces stronger, more durable persuasion — inferred understanding (no epilogue) or handed understanding (epilogue)? The paper never tests this." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "limitations",
+        label: "Methodological Limitations",
+        cards: [
+          {
+            title: "23. Methodological Limitations",
+            sections: [
+              { type: "define", text: "Three key methodological concerns that limit the strength of the paper's conclusions." },
+              { type: "table", headers: ["Limitation", "The Problem"],
+                rows: [
+                  ["1. Self-Report Global Reflection", "3 nearly identical items measure the tendency to report reflecting, not whether deep reflection actually occurred. No process measures (thought-listing, response latency)."],
+                  ["2. Mood-as-Information (Schwarz & Clore, 1983)", "Untested competing explanation: positive mood → heuristic agreement on Likert scales without deeper processing. Both reflection and beliefs self-reported in same session."],
+                  ["3. N=72 Underpowered (Study 1b)", "Serial mediation on 72 participants. Fritz & MacKinnon (2007): N > 100 needed for simple mediation. CI [.06, .68] extremely wide."],
+                ]
+              },
+              { type: "exam", text: "SA: 'Name one limitation.' Mood-as-Information = most analytically impressive answer. N=72 = easiest to explain concisely." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "nationwide",
+        label: "Nationwide Ad Analysis",
+        cards: [
+          {
+            title: "24. Nationwide Ad — Cross-Framework Analysis (CONFIRMED EXAM QUESTION)",
+            sections: [
+              { type: "define", text: "Super Bowl ad (#MakeSafeHappen): happy scenes of a boy → reveal he died from a household accident. Voiceover: 'I couldn't grow up. Because I died from an accident.' No CTA, no recommended action. Widely considered a failure." },
+              { type: "mechanism", text: "Hamby & Brinberg: Negative ending → negative affect → LOW global reflection → WEAKER safety beliefs. No epilogue to compensate. EPPM: Extreme threat (child death = severity; household accidents = susceptibility) + ZERO efficacy (no response efficacy, no self-efficacy) → FEAR CONTROL → rejection. Two frameworks converge: persuasion failure." },
+              { type: "table", headers: ["", "Nationwide", "Dove 'Cost of Beauty'"],
+                rows: [
+                  ["Ending", "Negative (child death)", "Negative (eating disorder)"],
+                  ["Epilogue/CTA", "NONE", "YES (support Kids Online Safety Act)"],
+                  ["Efficacy", "NONE", "YES (specific legislative action)"],
+                  ["H&B prediction", "Low reflection, weak beliefs", "Epilogue compensates for negative ending"],
+                  ["EPPM prediction", "Fear control → rejection", "Danger control → action path provided"],
+                ]
+              },
+              { type: "exam", text: "Professor confirmed this will appear on the exam. Prepare the dual-framework answer (H&B + EPPM). The Dove contrast shows how to fix what Nationwide got wrong." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "integration",
+    label: "Cross-Chapter",
+    title: "Cross-Chapter Integration",
+    desc: "Integration Chains and Common Exam Traps",
+    topics: [
+      {
+        id: "chains-ref",
+        label: "Integration Chains",
+        cards: [
+          { title: "Chain 1: Credibility x Two-Sided Messages", sections: [
+            { type: "mechanism", text: "Two-sided refutational → signals trustworthiness (Ch 12) → credibility boost → internalization → durable attitude change. Example: Domino's 'Oh Yes We Did' campaign." },
+          ]},
+          { title: "Chain 2: EPPM x Hamby & Brinberg (Nationwide)", sections: [
+            { type: "mechanism", text: "Negative ending (H&B → reduced reflection) + no epilogue + extreme threat with no efficacy (EPPM → fear control) = two frameworks, same prediction: failure." },
+          ]},
+          { title: "Chain 3: Transportation → Global Reflection → Beliefs", sections: [
+            { type: "mechanism", text: "Narrative → transportation (during-reading: immersion) → story ends → global reflection (post-reading: infer moral) → story-consistent beliefs. Sequential, not competing." },
+          ]},
+          { title: "Chain 4: Powerful Speech x Credibility x Reactance", sections: [
+            { type: "mechanism", text: "Powerful speech → perceived expertise (Ch 12) → enhanced persuasion. But too controlling → reactance (Ch 14 logic) → backfire." },
+          ]},
+          { title: "Chain 5: Framing x EPPM", sections: [
+            { type: "mechanism", text: "Loss-frame raises threat appraisal (severity/susceptibility). Gain-frame supports efficacy appraisal. Optimal fear appeal = loss-frame for threat + gain-frame for recommended action." },
+          ]},
+          { title: "Chain 6: Attractiveness x ELM Logic", sections: [
+            { type: "mechanism", text: "Low involvement → attractiveness = peripheral cue. High involvement + appearance product → attractiveness = central argument." },
+          ]},
+          { title: "Chain 7: Illusion of Invulnerability x Narrative", sections: [
+            { type: "mechanism", text: "Illusion keeps susceptibility low → fear appeals ignored at Stage 1. Narratives overcome this through character identification → vicarious susceptibility rises without triggering defensiveness." },
+          ]},
+        ],
+      },
+      {
+        id: "traps",
+        label: "10 Common Exam Traps",
+        cards: [
+          {
+            title: "Top 10 MC Trap Statements",
+            sections: [
+              { type: "table", headers: ["#", "The Trap", "The Correction"],
+                rows: [
+                  ["1", "'Fear control = successfully controlling fear'", "Fear control = managing the EMOTION by avoiding the message = FAILURE"],
+                  ["2", "'Transportation mediates ending → beliefs in H&B'", "Transportation = COVARIATE. Global reflection = mediator"],
+                  ["3", "'Two-sided messages are always more persuasive'", "Only REFUTATIONAL two-sided. Non-refutational can backfire"],
+                  ["4", "'Statistics about how common = severity'", "How common = SUSCEPTIBILITY. How bad = severity"],
+                  ["5", "'Vaccine is 95% effective = self-efficacy'", "That is RESPONSE efficacy. Self-efficacy = 'Available at your pharmacy'"],
+                  ["6", "'Fear appeal = the emotional state'", "Fear appeal = the MESSAGE. Fear = the emotion"],
+                  ["7", "'Celebrity endorses product → credibility'", "Unless perceived as expert, it is IDENTIFICATION (attractiveness)"],
+                  ["8", "'Without sunscreen → burns = gain-framed'", "That is LOSS-framed. Gain = 'Sunscreen keeps skin healthy'"],
+                  ["9", "'Global reflection = central-route processing'", "Reflection = infer IMPLICIT moral. Elaboration = evaluate EXPLICIT arguments"],
+                  ["10", "'Danger control is emotional'", "Danger control = COGNITIVE. Fear control = emotional"],
+                ]
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — Drill Tab (10 Distinction Drills)
+// ═══════════════════════════════════════════════════════════════
+
+const drills = [
+  {
+    id: 1,
+    title: "Credibility vs. Attractiveness",
+    scenario: "A well-known Instagram influencer promotes a new investment app. Their followers sign up because they admire the influencer's lifestyle and want to be like them. This is an example of persuasion through:",
+    options: [
+      "Credibility — the influencer has financial expertise",
+      "Compliance — the influencer has authority over followers",
+      "Internalization — the message aligns with followers' values",
+      "Identification — followers want to emulate the influencer",
+    ],
+    correct: 3,
+    trap: "Celebrity/influencer endorsement does not equal credibility. Unless the source is perceived as a domain EXPERT, this is identification (attractiveness), not internalization. The audience acts because they LIKE and want to emulate the source, not because the recommendation aligns with their financial values.",
+  },
+  {
+    id: 2,
+    title: "Authority vs. Credibility",
+    scenario: "A drill sergeant orders recruits to do 50 push-ups. They comply immediately, even those who privately think the exercise is pointless. The recruits' behavior change is best explained by:",
+    options: [
+      "Internalization — they believe push-ups improve fitness",
+      "Identification — they want to be like the sergeant",
+      "Compliance — the sergeant's structural position compels obedience",
+      "Credibility — the sergeant's expertise in fitness",
+    ],
+    correct: 2,
+    trap: "The recruits comply because of the sergeant's POSITION (structural authority), not because they privately agree. Test: would they still do push-ups if no one was watching? If no → compliance (authority). If yes → internalization (credibility).",
+  },
+  {
+    id: 3,
+    title: "One-Sided vs. Two-Sided Messages",
+    scenario: "A sunscreen brand says: 'Our formula can feel greasy on first application, but it absorbs completely within 30 seconds, leaving no residue.' This message is:",
+    options: [
+      "One-sided — it only discusses the product's benefits",
+      "Two-sided (non-refutational) — it mentions a weakness without addressing it",
+      "Two-sided (refutational) — it acknowledges a weakness and counters it",
+      "Gain-framed — it emphasizes benefits of using the product",
+    ],
+    correct: 2,
+    trap: "Two-sided must REFUTE. This message acknowledges the weakness ('greasy') AND provides a counter ('absorbs in 30 seconds'). A non-refutational version would just say 'it can feel greasy' and stop there — which can backfire by giving ammunition without rebuttal.",
+  },
+  {
+    id: 4,
+    title: "Loss-Frame vs. Gain-Frame",
+    scenario: "A dental health campaign tells patients: 'Without regular flossing, you risk gum disease, tooth decay, and expensive dental procedures.' This message is:",
+    options: [
+      "Gain-framed — it promotes good dental health",
+      "Loss-framed — it emphasizes costs of NOT acting",
+      "Fear appeal — it tries to scare patients",
+      "Response efficacy — it shows flossing works",
+    ],
+    correct: 1,
+    trap: "This message emphasizes what you LOSE by NOT flossing (gum disease, tooth decay, cost). A gain-framed version: 'Regular flossing keeps your gums healthy and saves you money on dental visits.' For prevention behaviors like dental hygiene, gain-frames are typically more effective.",
+  },
+  {
+    id: 5,
+    title: "Transportation vs. Global Reflection",
+    scenario: "A researcher finds that after reading a cautionary story about pesticide exposure, participants who inferred the story's moral showed stronger pro-safety beliefs. This inference process is:",
+    options: [
+      "Transportation — immersion in the narrative world",
+      "ELM elaboration — central-route argument evaluation",
+      "Global reflection — post-reading inference of the story's moral",
+      "Fear control — emotional processing of the threat",
+    ],
+    correct: 2,
+    trap: "Transportation occurs DURING reading (immersion, reduced counterarguing). Global reflection occurs AFTER reading (inferring the moral). In Hamby & Brinberg, transportation = covariate, global reflection = key mediator. The post-reading timing is the giveaway.",
+  },
+  {
+    id: 6,
+    title: "Danger Control vs. Fear Control",
+    scenario: "After seeing an anti-smoking ad with graphic lung cancer images, a smoker thinks: 'Those studies are exaggerated. My grandfather smoked until 90.' The smoker is engaging in:",
+    options: [
+      "Danger control — cognitively engaging with the health threat",
+      "Fear control — managing the uncomfortable emotion through denial",
+      "Response efficacy — evaluating whether quitting works",
+      "Internalization — accepting the message into personal values",
+    ],
+    correct: 1,
+    trap: "'Fear control' sounds positive but it is FAILURE. The smoker is managing their FEAR (the uncomfortable emotion) by DENYING the message — not engaging with the actual danger. Danger control would look like: 'That's scary. I should look into nicotine patches.'",
+  },
+  {
+    id: 7,
+    title: "Self-Efficacy vs. Response Efficacy",
+    scenario: "A flu prevention campaign states: 'The flu vaccine reduces your risk of infection by 60%.' This message primarily addresses:",
+    options: [
+      "Self-efficacy — the person can easily get vaccinated",
+      "Severity — the flu is a serious illness",
+      "Response efficacy — the recommended action is effective",
+      "Susceptibility — the person is likely to get the flu",
+    ],
+    correct: 2,
+    trap: "'60% effective' is about whether the ACTION WORKS (response efficacy — about the solution). Self-efficacy is about whether the PERSON CAN DO IT: 'Available at every pharmacy, no appointment needed, takes 10 minutes.' Both must be high for danger control.",
+  },
+  {
+    id: 8,
+    title: "Susceptibility vs. Severity",
+    scenario: "A melanoma awareness campaign states: 'Melanoma kills over 7,000 Americans each year.' This message primarily communicates:",
+    options: [
+      "Severity — how dangerous melanoma is",
+      "Susceptibility — how common melanoma deaths are",
+      "Response efficacy — that treatment works",
+      "Self-efficacy — that prevention is possible",
+    ],
+    correct: 1,
+    trap: "Statistics about how COMMON or prevalent something is communicate SUSCEPTIBILITY (likelihood/probability), not severity. Severity would describe how BAD the consequences are: 'Melanoma spreads rapidly to vital organs, causing excruciating pain.' The '7,000 deaths' statistic answers 'how likely?' not 'how bad?'",
+  },
+  {
+    id: 9,
+    title: "Fear vs. Fear Appeal",
+    scenario: "A public health researcher writes: 'The anti-drug PSA used graphic imagery of addiction to trigger a fear appeal in teenage viewers.' What is wrong with this statement?",
+    options: [
+      "Nothing — fear appeal correctly describes the viewers' emotional reaction",
+      "The PSA IS the fear appeal (the message); what viewers experience is fear (the emotion)",
+      "Fear appeals only work on adults, not teenagers",
+      "Graphic imagery triggers disgust, not fear",
+    ],
+    correct: 1,
+    trap: "The fear appeal is the MESSAGE ITSELF — the external communication strategy. Fear is the INTERNAL emotional reaction it produces in the audience. You don't 'trigger a fear appeal in viewers.' You trigger FEAR in viewers by using a fear appeal.",
+  },
+  {
+    id: 10,
+    title: "Global Reflection vs. ELM Elaboration",
+    scenario: "After watching a documentary about ocean pollution, a viewer thinks: 'The underlying message is that individual consumer choices drive systemic environmental harm.' This thinking process is best described as:",
+    options: [
+      "ELM elaboration — carefully evaluating the documentary's explicit arguments",
+      "Global reflection — inferring the implicit overall moral of the narrative",
+      "Transportation — being immersed in the documentary's story world",
+      "Framing — the documentary selected certain aspects of reality to emphasize",
+    ],
+    correct: 1,
+    trap: "The viewer is inferring an IMPLICIT moral ('individual choices drive systemic harm') that was not explicitly stated. ELM elaboration evaluates EXPLICIT arguments and evidence. Global reflection infers UNSTATED morals from narrative subtext. The distinction: explicit vs. implicit processing.",
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — Drill Tab V2 (Same 10 pairs, different angle)
+// ═══════════════════════════════════════════════════════════════
+
+const drillsV2 = [
+  {
+    id: 1,
+    title: "Credibility vs. Attractiveness",
+    scenario: "A beauty brand uses a supermodel to promote skincare. Sales increase among low-involvement shoppers who find the model glamorous. This is best explained by:",
+    options: [
+      "Credibility — the supermodel has skincare expertise",
+      "Attractiveness — a peripheral cue at low involvement",
+      "Compliance — the brand has authority over shoppers",
+      "Internalization — the message aligns with shoppers' health values",
+    ],
+    correct: 1,
+    trap: "At low involvement, attractiveness functions as a PERIPHERAL CUE — shoppers aren't deeply evaluating expertise. The supermodel has no skincare credentials, so this is NOT credibility. If the product were appearance-related AND involvement were high, attractiveness could function as a central argument. But here, it's the classic low-involvement peripheral route.",
+  },
+  {
+    id: 2,
+    title: "Authority vs. Credibility",
+    scenario: "In Burger's 2009 replication, 70% of participants continued past 150V — not statistically different from Milgram's 82.5%. The original participants obeyed primarily because of:",
+    options: [
+      "Credibility — the experimenter's scientific expertise convinced them",
+      "Internalization — they believed shocking people was valuable",
+      "Authority — Yale prestige, lab coat, and the experimenter's structural position",
+      "Identification — they wanted to be like the experimenter",
+    ],
+    correct: 2,
+    trap: "The four explanations are all about AUTHORITY: early socialization, trappings (Yale, lab coat = peripheral cues of legitimacy), binding forces, and power of the situation. Participants did NOT internalize the value of shocking people — they COMPLIED because of structural position. Evidence: many reported severe distress afterward, proving no private attitude change.",
+  },
+  {
+    id: 3,
+    title: "One-Sided vs. Two-Sided Messages",
+    scenario: "A political ad only presents the candidate's strengths to an audience that already supports them. No opposing views are mentioned. This message is:",
+    options: [
+      "One-sided — effective here because the audience already agrees",
+      "Two-sided refutational — it builds resistance to opposition",
+      "Two-sided non-refutational — it acknowledges weaknesses",
+      "Loss-framed — it emphasizes risks of not voting",
+    ],
+    correct: 0,
+    trap: "One-sided messages work best when the audience ALREADY AGREES. Mentioning the other side is unnecessary and could introduce doubt. Two-sided refutational would be better if the audience knows or will encounter counterarguments — it builds inoculation. But when preaching to the choir, keep it simple.",
+  },
+  {
+    id: 4,
+    title: "Loss-Frame vs. Gain-Frame",
+    scenario: "'Sunscreen keeps your skin healthy and youthful.' This message is:",
+    options: [
+      "Loss-framed — it warns about skin damage",
+      "Gain-framed — it emphasizes benefits of acting",
+      "Fear appeal — it triggers concern about aging",
+      "Response efficacy — it shows sunscreen works",
+    ],
+    correct: 1,
+    trap: "This emphasizes what you GAIN by using sunscreen (healthy, youthful skin). A loss-framed version: 'Without sunscreen you risk burns and premature aging.' For prevention behaviors like sunscreen use, gain-frames are typically MORE effective (p. 312). The message describes benefits, not costs of inaction.",
+  },
+  {
+    id: 5,
+    title: "Transportation vs. Global Reflection",
+    scenario: "While reading Hamby & Brinberg's pesticide narrative, a reader feels completely absorbed in the character's experience, vividly imagining the farm scenes. This process is:",
+    options: [
+      "Global reflection — inferring the story's moral about pesticide safety",
+      "Transportation — during-reading immersion in the narrative world",
+      "ELM elaboration — evaluating the story's arguments about pesticides",
+      "Fear control — managing anxiety about pesticide exposure",
+    ],
+    correct: 1,
+    trap: "Transportation happens DURING reading: vivid mental imagery, emotional engagement, focused attention (Green & Brock, 2000). The reader is absorbed NOW, not yet inferring a moral. Global reflection happens AFTER reading when the reader steps back to infer the overall message. The timing is the giveaway: during = transportation, after = global reflection.",
+  },
+  {
+    id: 6,
+    title: "Danger Control vs. Fear Control",
+    scenario: "Dove's 'Cost of Beauty' ad shows a teen developing an eating disorder from social media, then ends with a CTA: 'Support the Kids Online Safety Act.' Most viewers felt motivated to take action. This response is:",
+    options: [
+      "Fear control — viewers managed their discomfort by taking action",
+      "Danger control — high threat combined with high efficacy led to message acceptance",
+      "Compliance — the brand's authority compelled viewers to act",
+      "Transportation — viewers were immersed in the teen's story",
+    ],
+    correct: 1,
+    trap: "Dove provided both high threat (teen suffering from eating disorder = severity + susceptibility) AND high efficacy (specific legislative action = response efficacy; clear next step = self-efficacy). High threat + high efficacy → DANGER CONTROL → message acceptance → behavior change. Contrast with Nationwide: same high threat but ZERO efficacy → fear control → rejection.",
+  },
+  {
+    id: 7,
+    title: "Self-Efficacy vs. Response Efficacy",
+    scenario: "'Sunscreen with SPF 50 blocks 98% of UV rays.' This message primarily addresses:",
+    options: [
+      "Self-efficacy — the person can easily apply sunscreen",
+      "Response efficacy — the recommended action is effective at blocking UV",
+      "Susceptibility — UV exposure is common",
+      "Severity — UV damage is serious",
+    ],
+    correct: 1,
+    trap: "'98% UV blocking' answers: 'Does sunscreen WORK?' — that's response efficacy (about the solution's effectiveness). Self-efficacy would address: 'Can I do it?' — e.g., 'Easy to apply, no white residue, takes 30 seconds.' Both must be high for danger control in EPPM.",
+  },
+  {
+    id: 8,
+    title: "Susceptibility vs. Severity",
+    scenario: "'Skin cancer can be fatal and requires extensive, painful treatment including surgery and chemotherapy.' This message primarily communicates:",
+    options: [
+      "Susceptibility — skin cancer is common",
+      "Severity — how bad the consequences of skin cancer are",
+      "Self-efficacy — treatment is available",
+      "Response efficacy — medical treatment works",
+    ],
+    correct: 1,
+    trap: "This describes HOW BAD skin cancer is (fatal, painful, extensive treatment) = SEVERITY. Susceptibility would be about HOW LIKELY: '1 in 5 Americans will develop skin cancer in their lifetime.' Severity = magnitude of harm. Susceptibility = probability of occurrence. Don't confuse descriptions of consequences with statistics about prevalence.",
+  },
+  {
+    id: 9,
+    title: "Fear vs. Fear Appeal",
+    scenario: "After watching the Nationwide Super Bowl ad showing a child who died from a household accident, viewers report feeling shock, sadness, and anger. This emotional response is:",
+    options: [
+      "A fear appeal — the ad successfully triggered a persuasive response",
+      "Fear — the internal emotional reaction to the threatening message",
+      "Danger control — viewers are cognitively processing the threat",
+      "Global reflection — viewers are inferring the ad's moral",
+    ],
+    correct: 1,
+    trap: "The shock, sadness, and anger are FEAR — the internal emotional reaction inside the viewers. The ad itself is the FEAR APPEAL — the external persuasive message designed to scare. You don't 'feel a fear appeal.' You feel FEAR in response to a fear appeal. The ad (message) triggered fear (emotion).",
+  },
+  {
+    id: 10,
+    title: "Effective Guilt vs. Backfired Guilt",
+    scenario: "A charity ad aggressively states: 'People are dying and you're doing NOTHING about it.' It shows graphic suffering but provides no specific action the viewer can take. The likely audience response is:",
+    options: [
+      "Effective guilt — viewers feel responsible and want to help",
+      "Psychological reactance — excessive guilt with no efficacy leads to rejection",
+      "Danger control — viewers cognitively engage with the suffering",
+      "Internalization — the message aligns with viewers' values about helping",
+    ],
+    correct: 1,
+    trap: "Effective guilt requires TWO conditions: (1) empathy for the target + (2) efficacy — a clear action that solves the problem AND relieves guilt. This ad has aggressive guilt but NO efficacy (no action to take). Excessive guilt without an action path → psychological REACTANCE → audience rejects the message. Same mechanism as overly controlling powerful speech (Ch 13).",
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — Drill Tab V3 (Harder, cross-chapter integration)
+// ═══════════════════════════════════════════════════════════════
+
+const drillsV3 = [
+  {
+    id: 1,
+    title: "Credibility vs. Attractiveness",
+    scenario: "An attractive doctor recommends a medication on TV. A patient follows the advice because they believe the doctor has medical expertise and the recommendation aligns with their health values. This is best explained by:",
+    options: [
+      "Attractiveness → identification — the patient admires the doctor's appearance",
+      "Credibility → internalization — the patient accepts based on perceived expertise and value alignment",
+      "Authority → compliance — the doctor's position compels obedience",
+      "Transportation — the patient is absorbed in the doctor's story",
+    ],
+    correct: 1,
+    trap: "Despite the doctor being attractive, the patient's REASON for following is expertise + value alignment = credibility → internalization. The key question is always WHY: because they LIKE the source (identification) or because the message MAKES SENSE to their values (internalization)? Same source can trigger different processes depending on the audience's motivation.",
+  },
+  {
+    id: 2,
+    title: "Authority vs. Credibility",
+    scenario: "Milgram's participants later reported feeling severe distress about administering shocks. Many said they wanted to stop but felt unable to. This post-experiment distress suggests their obedience was:",
+    options: [
+      "Internalization — they deeply believed shocking was correct but felt conflicted later",
+      "Identification — they wanted to be like the experimenter",
+      "Compliance — they obeyed externally without private attitude change",
+      "Credibility — the experimenter's expertise convinced them the shocks were safe",
+    ],
+    correct: 2,
+    trap: "Post-experiment distress is EVIDENCE of compliance, not internalization. If they had internalized (credibility), they would have believed the shocks were justified and felt no distress. The distress proves: outward behavior changed (compliance) but private attitudes did NOT (no internalization). This is the hallmark of authority → compliance: behavior without belief.",
+  },
+  {
+    id: 3,
+    title: "One-Sided vs. Two-Sided + Credibility",
+    scenario: "Domino's 'Oh Yes We Did' campaign admitted their pizza was bad, then showed how they improved it. Both sales and brand perception increased. The two-sided approach worked because:",
+    options: [
+      "It was one-sided — they only talked about improvements",
+      "The non-refutational admission made customers feel sorry for the brand",
+      "Acknowledging AND refuting the weakness signaled trustworthiness, boosting credibility → internalization",
+      "It was a fear appeal — customers feared bad pizza",
+    ],
+    correct: 2,
+    trap: "Cross-chapter chain: Two-sided REFUTATIONAL (Ch 13: acknowledged bad pizza AND refuted by showing improvement) → signals trustworthiness (Ch 12: core credibility component) → credibility boost → internalization → durable attitude change. This is Chain 1 from the integration chains. The key is REFUTATION — simply admitting weakness without a counter would be non-refutational and could backfire.",
+  },
+  {
+    id: 4,
+    title: "Loss-Frame vs. Gain-Frame + EPPM",
+    scenario: "A campaign says: 'Without vaccination, your child risks severe illness' then adds 'The vaccine is free at all pharmacies and takes 10 minutes.' The first statement is ___ framed and the second addresses ___.",
+    options: [
+      "Gain-framed; response efficacy",
+      "Loss-framed; severity",
+      "Loss-framed; self-efficacy",
+      "Gain-framed; self-efficacy",
+    ],
+    correct: 2,
+    trap: "First: 'Without vaccination, your child risks...' = costs of NOT acting = LOSS-framed. This raises threat appraisal (severity/susceptibility). Second: 'Free at all pharmacies, takes 10 minutes' = CAN I DO IT? = self-efficacy (easy, accessible, quick). Together: high threat (loss-frame) + high efficacy → danger control. This is Chain 5: optimal fear appeal uses loss-frame for threat + gain-frame/efficacy for recommended action.",
+  },
+  {
+    id: 5,
+    title: "Transportation vs. Global Reflection + Epilogue",
+    scenario: "In Hamby & Brinberg Study 2, the epilogue condition eliminated global reflection's mediating role. The best explanation is:",
+    options: [
+      "The epilogue increased transportation, which replaced global reflection",
+      "The epilogue provided the moral directly, making inference unnecessary",
+      "The epilogue reduced affect, which is needed for reflection",
+      "The epilogue made the narrative less vivid, reducing immersion",
+    ],
+    correct: 1,
+    trap: "When an epilogue hands the moral directly to the audience, there is NO NEED for inference — so global reflection becomes unnecessary and can no longer mediate. Practical paradox: most real PSAs include explicit CTAs = epilogue condition, so the core finding (positive endings → more reflection → beliefs) may not apply in most real campaigns.",
+  },
+  {
+    id: 6,
+    title: "Danger Control vs. Fear Control + Nationwide",
+    scenario: "If the Nationwide Super Bowl ad had added: 'Visit makesafehappen.com to childproof your home in 10 minutes,' the EPPM prediction would change from fear control to:",
+    options: [
+      "Still fear control — the negative ending is too shocking",
+      "Danger control — adding efficacy while keeping high threat enables message acceptance",
+      "Message ignored — the website reduces perceived threat",
+      "Compliance — the brand's authority compels action",
+    ],
+    correct: 1,
+    trap: "The original Nationwide ad had high threat + ZERO efficacy → fear control → rejection. Adding a specific website provides response efficacy ('childproofing works') + self-efficacy ('10 minutes, easy to do'). Same high threat + NOW high efficacy → danger control → message acceptance → behavior change. The threat level doesn't change — what changes is efficacy.",
+  },
+  {
+    id: 7,
+    title: "Self-Efficacy vs. Response Efficacy + Attractiveness",
+    scenario: "An attractive celebrity says 'I use this health app and it changed my life' in a TV ad. Low-involvement viewers are persuaded to download it. The persuasion process and the type of efficacy communicated are:",
+    options: [
+      "Credibility → internalization; response efficacy through expert data",
+      "Attractiveness → identification at low involvement; response efficacy through testimonial narrative",
+      "Authority → compliance; self-efficacy through celebrity endorsement",
+      "Transportation → immersion; global reflection through the celebrity's story",
+    ],
+    correct: 1,
+    trap: "At low involvement, the attractive celebrity functions as a PERIPHERAL CUE → attractiveness → identification (not credibility, unless they're a domain expert). The testimonial 'it changed my life' functions as response efficacy through narrative rather than statistical data — it answers 'does the solution work?' Cross-chapter: attractiveness (Ch 12) + ELM low involvement logic + efficacy (Ch 14).",
+  },
+  {
+    id: 8,
+    title: "Susceptibility vs. Severity + Illusion of Invulnerability",
+    scenario: "College students see the statistic: '60% of binge drinkers develop liver problems by age 40.' Many dismiss it, thinking 'That won't happen to me — I'll cut back before then.' The statistic addresses ___ but fails because of ___.",
+    options: [
+      "Severity; denial of reality",
+      "Susceptibility; illusion of invulnerability — specifically temporal separation of self",
+      "Response efficacy; low self-efficacy",
+      "Severity; fear control",
+    ],
+    correct: 1,
+    trap: "'60% develop liver problems' = HOW LIKELY = susceptibility (probability). It fails because of the illusion of invulnerability, specifically TEMPORAL SEPARATION: 'I'll cut back before then' = enjoying risky behavior now, offloading consequences to a 'future, more mature self.' This is strongest among younger audiences. The statistic correctly targets susceptibility, but the psychological barrier blocks it at EPPM Stage 1.",
+  },
+  {
+    id: 9,
+    title: "Fear vs. Fear Appeal + Narrative + Transportation",
+    scenario: "A brand creates a short film where a character gradually realizes the dangers of texting while driving, culminating in a near-fatal crash. Viewers report feeling intense anxiety during the story. The story itself is a ___, the anxiety is ___, and the immersion that reduces counterarguing is ___.",
+    options: [
+      "Fear appeal; fear; transportation",
+      "Narrative; fear control; global reflection",
+      "Fear; fear appeal; ELM elaboration",
+      "Fear appeal; danger control; identification",
+    ],
+    correct: 0,
+    trap: "Three distinct constructs: (1) The story = FEAR APPEAL (external persuasive message designed to scare, Ch 14). (2) The anxiety = FEAR (internal emotional reaction, Ch 14). (3) The immersion during viewing = TRANSPORTATION (during-reading absorption that reduces counterarguing, Green & Brock, Ch 13). Cross-chapter integration: narratives (Ch 13) can serve as the vehicle for fear appeals (Ch 14), with transportation amplifying the emotional impact.",
+  },
+  {
+    id: 10,
+    title: "Global Reflection vs. ELM Elaboration + H&B Methodology",
+    scenario: "A critic argues that Hamby & Brinberg's 3 self-report items ('I thought about the meaning of the story,' 'I thought about the message,' 'I thought about what the story was trying to express') cannot distinguish genuine moral inference from mood-congruent agreement on Likert scales. This critique relates to:",
+    options: [
+      "Limitation 1 — self-report items measure tendency to report reflecting, not actual deep reflection",
+      "Limitation 2 — Mood-as-Information (Schwarz & Clore, 1983): positive mood may drive agreement without real processing",
+      "Both Limitation 1 AND Limitation 2 — the items can't separate reporting bias from mood-driven agreement",
+      "The epilogue boundary condition — epilogues make reflection unnecessary",
+    ],
+    correct: 2,
+    trap: "This critique spans BOTH limitations. Limitation 1: the 3 nearly identical self-report items measure the TENDENCY to report reflecting, not whether deep reflection actually occurred (no process measures like thought-listing). Limitation 2: Mood-as-Information (Schwarz & Clore, 1983) — positive mood → heuristic agreement on Likert scales without deeper processing. Together, they create an untested competing explanation that undermines the global reflection mechanism. The most analytically impressive exam answer.",
+  },
+];
+
+const drillVersions = { v1: drills, v2: drillsV2, v3: drillsV3 };
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — Cross-Chapter Chains (7 Chains)
+// ═══════════════════════════════════════════════════════════════
+
+const chainData = [
+  {
+    id: 1,
+    title: "Credibility x Two-Sided Messages",
+    nodes: [
+      { label: "Two-sided refutational", chapter: "Ch 13", topicId: "sidedness", chapterId: "ch13" },
+      { label: "Signals trustworthiness", chapter: "Ch 12", topicId: "credibility", chapterId: "ch11-12" },
+      { label: "Credibility boost", chapter: "Ch 12", topicId: "credibility", chapterId: "ch11-12" },
+      { label: "Internalization", chapter: "Ch 12", topicId: "credibility", chapterId: "ch11-12" },
+      { label: "Durable attitude change", chapter: "Outcome", topicId: null, chapterId: null },
+    ],
+    detail: "Acknowledging weaknesses signals honesty → trustworthiness → credibility. Example: Domino's 'Oh Yes We Did' campaign.",
+  },
+  {
+    id: 2,
+    title: "EPPM x Hamby & Brinberg (Nationwide)",
+    nodes: [
+      { label: "Negative ending", chapter: "H&B", topicId: "nationwide", chapterId: "article" },
+      { label: "Reduced reflection", chapter: "H&B", topicId: "global-reflection", chapterId: "article" },
+      { label: "No epilogue", chapter: "H&B", topicId: "epilogue", chapterId: "article" },
+      { label: "High threat + zero efficacy", chapter: "Ch 14", topicId: "eppm", chapterId: "ch14" },
+      { label: "Fear control → rejection", chapter: "Ch 14", topicId: "dc-fc", chapterId: "ch14" },
+    ],
+    detail: "Two frameworks converge on the same prediction: persuasion failure. The confirmed exam SA question.",
+  },
+  {
+    id: 3,
+    title: "Transportation → Global Reflection → Beliefs",
+    nodes: [
+      { label: "Narrative with vivid characters", chapter: "Ch 13", topicId: "narrative", chapterId: "ch13" },
+      { label: "Transportation (during-reading)", chapter: "Ch 13", topicId: "narrative", chapterId: "ch13" },
+      { label: "Story ends", chapter: "Transition", topicId: null, chapterId: null },
+      { label: "Global reflection (post-reading)", chapter: "H&B", topicId: "global-reflection", chapterId: "article" },
+      { label: "Story-consistent beliefs", chapter: "H&B", topicId: "core-finding", chapterId: "article" },
+    ],
+    detail: "Sequential, not competing. Transportation sets up immersion; global reflection is where meaning is extracted after.",
+  },
+  {
+    id: 4,
+    title: "Powerful Speech x Credibility x Reactance",
+    nodes: [
+      { label: "Powerful speech (no hedges)", chapter: "Ch 13", topicId: "speech", chapterId: "ch13" },
+      { label: "Perceived expertise", chapter: "Ch 12", topicId: "credibility", chapterId: "ch11-12" },
+      { label: "Enhanced persuasion", chapter: "Outcome", topicId: null, chapterId: null },
+    ],
+    detail: "But if too controlling → psychological reactance (Ch 14 guilt appeal logic) → backfire.",
+  },
+  {
+    id: 5,
+    title: "Framing x EPPM",
+    nodes: [
+      { label: "Loss-frame (costs of inaction)", chapter: "Ch 13", topicId: "framing", chapterId: "ch13" },
+      { label: "Raises threat appraisal", chapter: "Ch 14", topicId: "eppm", chapterId: "ch14" },
+      { label: "Gain-frame (benefits of action)", chapter: "Ch 13", topicId: "framing", chapterId: "ch13" },
+      { label: "Supports efficacy appraisal", chapter: "Ch 14", topicId: "eppm", chapterId: "ch14" },
+    ],
+    detail: "Optimal fear appeal: loss-frame for threat + gain-frame for recommended action.",
+  },
+  {
+    id: 6,
+    title: "Attractiveness x ELM Logic",
+    nodes: [
+      { label: "Low involvement", chapter: "Context", topicId: null, chapterId: null },
+      { label: "Attractiveness = peripheral cue", chapter: "Ch 12", topicId: "attractiveness", chapterId: "ch11-12" },
+      { label: "High involvement + appearance product", chapter: "Context", topicId: null, chapterId: null },
+      { label: "Attractiveness = central argument", chapter: "Ch 12", topicId: "attractiveness", chapterId: "ch11-12" },
+    ],
+    detail: "Same source factor, different processing route depending on involvement and product type.",
+  },
+  {
+    id: 7,
+    title: "Illusion of Invulnerability x Narrative",
+    nodes: [
+      { label: "Illusion of invulnerability", chapter: "Ch 14", topicId: "invulnerability", chapterId: "ch14" },
+      { label: "Susceptibility stays low", chapter: "Ch 14", topicId: "eppm", chapterId: "ch14" },
+      { label: "Fear appeals fail at Stage 1", chapter: "Ch 14", topicId: "eppm", chapterId: "ch14" },
+      { label: "Narrative identification", chapter: "Ch 13", topicId: "narrative", chapterId: "ch13" },
+      { label: "Vicarious susceptibility rises", chapter: "Outcome", topicId: null, chapterId: null },
+    ],
+    detail: "Narratives overcome the illusion through character identification — vicarious susceptibility rises without triggering defensive reactions.",
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — MC Question Bank (20 questions)
+// ═══════════════════════════════════════════════════════════════
+
+const mcQuestions = [
+  { id: 1, chapter: "Ch 11-12", question: "According to Kelman's processes, a person who follows a doctor's advice because it aligns with their own health values is experiencing:", options: ["Compliance", "Identification", "Internalization", "Transportation"], correct: 2, explanation: "Value-congruent acceptance = internalization (credibility process). If they followed just because of the doctor's position, that would be compliance." },
+  { id: 2, chapter: "Ch 14", question: "In EPPM, high perceived threat + low perceived efficacy produces:", options: ["Danger control", "Message acceptance", "Fear control", "Protection motivation"], correct: 2, explanation: "High threat + LOW efficacy = fear control (emotional, defensive avoidance). High threat + HIGH efficacy = danger control." },
+  { id: 3, chapter: "H&B", question: "What eliminates global reflection's mediating role in Hamby & Brinberg?", options: ["High transportation", "Negative ending", "An explicit epilogue", "Low affect"], correct: 2, explanation: "Epilogue provides the moral directly → no inference needed → global reflection unnecessary → mediation path disappears (Study 2)." },
+  { id: 4, chapter: "Ch 13", question: "Which is a marker of powerless speech?", options: ["Direct assertions", "Confident tone", "Tag questions", "Fast speech rate"], correct: 2, explanation: "Tag questions ('don't you think?') are one of four powerless markers. Others: hesitations, hedges, disclaimers." },
+  { id: 5, chapter: "Ch 13", question: "A one-sided message is more effective than two-sided when:", options: ["Audience is aware of counterarguments", "Audience already strongly agrees", "Speaker wants credibility", "Audience will encounter opposition"], correct: 1, explanation: "One-sided works best when audience already agrees. Two-sided refutational is better when they know or will encounter the other side." },
+  { id: 6, chapter: "Ch 14", question: "'Getting a mammogram takes 15 min and is covered by insurance.' This addresses:", options: ["Response efficacy", "Severity", "Self-efficacy", "Susceptibility"], correct: 2, explanation: "Self-efficacy: 'Can I do it?' Shows the action is easy and accessible. Response efficacy would be about whether mammograms actually detect cancer." },
+  { id: 7, chapter: "Ch 11-12", question: "Burger's 2009 replication of Milgram found:", options: ["Obedience dropped significantly", "70% continued past 150V, not significantly different from Milgram", "Only 30% obeyed", "Women were more obedient than men"], correct: 1, explanation: "70% past 150V vs. 82.5% in Milgram. Difference NOT statistically significant. Obedience hasn't meaningfully decreased over 4 decades." },
+  { id: 8, chapter: "Ch 11-12", question: "When does attractiveness function as a CENTRAL argument?", options: ["Low involvement decisions", "Appearance-related products", "National crises", "High self-monitors"], correct: 1, explanation: "For appearance-related products, physical appeal IS the argument, working even at high involvement. Otherwise, it's a peripheral cue." },
+  { id: 9, chapter: "Ch 14", question: "'1 in 4 women will experience domestic violence.' This addresses:", options: ["Severity", "Susceptibility", "Self-efficacy", "Response efficacy"], correct: 1, explanation: "Susceptibility = probability/likelihood. Statistics about how COMMON something is = susceptibility. Severity describes how BAD the consequences are." },
+  { id: 10, chapter: "H&B", question: "In Hamby & Brinberg, transportation is treated as a:", options: ["Mediator", "Moderator", "Covariate", "Dependent variable"], correct: 2, explanation: "Covariate. Ending valence is post-reading; transportation is during-reading. It can't mediate an effect that occurs after it. Global reflection is the mediator." },
+  { id: 11, chapter: "Ch 14", question: "The 'illusion of invulnerability' does NOT include:", options: ["Denial of reality", "Stereotyping the victim", "Temporal separation of self", "Response efficacy assessment"], correct: 3, explanation: "The three reasons are denial, stereotyping the victim, and temporal self-separation. Response efficacy is an EPPM Stage 2 component." },
+  { id: 12, chapter: "Ch 13", question: "What theory explains why speakers adjust speech rate to match their audience?", options: ["ELM", "EPPM", "Communication Accommodation Theory", "Prospect Theory"], correct: 2, explanation: "CAT: speakers adapt rate, tone, vocabulary to match audience style. Convergence strategy to reduce social distance." },
+  { id: 13, chapter: "Ch 13", question: "A non-refutational two-sided message can:", options: ["Always boost credibility", "Backfire by giving ammunition without rebuttal", "Enhance transportation", "Increase self-efficacy"], correct: 1, explanation: "Two-sided must REFUTE. Simply mentioning the other side without refutation gives the audience ammunition against your position." },
+  { id: 14, chapter: "Ch 14", question: "Danger control involves:", options: ["Emotional processing of fear", "Cognitive focus on the problem", "Defensive avoidance", "Message rejection"], correct: 1, explanation: "Danger control = COGNITIVE, external focus on the PROBLEM. Fear control = emotional, internal focus on the feeling." },
+  { id: 15, chapter: "H&B", question: "Which PROCESS model did H&B use for serial mediation (Study 1b)?", options: ["Model 4", "Model 6", "Model 7", "Model 14"], correct: 1, explanation: "Study 1a = Model 4 (simple). Study 1b = Model 6 (serial: ending → affect → reflection → beliefs). Study 2 = Model 7 (moderated)." },
+  { id: 16, chapter: "Ch 14", question: "A campaign shows graphic car accident imagery but offers no safety information. Per EPPM, this most likely produces:", options: ["Danger control", "Fear control", "Message acceptance", "Increased self-efficacy"], correct: 1, explanation: "High threat (graphic consequences) + no efficacy (no safety info) = fear control = defensive avoidance." },
+  { id: 17, chapter: "Ch 14", question: "Dr. Oh corrected: '80% of girls by age 13 distort their appearance online' is an example of:", options: ["Severity", "Susceptibility", "Response efficacy", "Self-efficacy"], correct: 1, explanation: "Statistics about how COMMON something is = SUSCEPTIBILITY. Severity = how DEEP the harm is. Dr. Oh explicitly corrected this during the Dove discussion." },
+  { id: 18, chapter: "Ch 11-12", question: "Baumrind's 1964 critique of Milgram focused on:", options: ["Statistical validity", "Ethical treatment of participants", "Sample size", "External validity"], correct: 1, explanation: "Baumrind criticized disrespectful treatment, flagrant deception, and severe emotional distress. Helped establish ethical review boards." },
+  { id: 19, chapter: "Ch 13", question: "Narratives persuade differently from argument-based messages primarily because they:", options: ["Use stronger evidence", "Reduce counterarguing through immersion", "Present more logical claims", "Target higher-educated audiences"], correct: 1, explanation: "Narratives operate through affective processes — identification, emotion, vivid imagery — which reduce counterarguing. Arguments invite counterarguing." },
+  { id: 20, chapter: "H&B", question: "The practical paradox of Hamby & Brinberg's epilogue finding is:", options: ["Epilogues are hard to write", "Most real campaigns include CTAs, operating in the epilogue condition where the core finding may not apply", "Epilogues only work for positive endings", "Epilogues reduce transportation"], correct: 1, explanation: "Most real PSAs include explicit messages/CTAs = epilogue condition. The core finding (positive endings → more reflection) may not apply when an epilogue is present." },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONTENT DATA — SA Prompts
+// ═══════════════════════════════════════════════════════════════
+
+const saPrompt = {
+  prompt: "Using both Hamby & Brinberg (2016) and the EPPM framework, analyze why the Nationwide Super Bowl ad is unlikely to succeed as a persuasive attempt.",
+  rubric: [
+    "Referenced H&B core finding (positive endings → global reflection)",
+    "Explained WHY negative ending reduces reflection (negative affect → narrowed processing)",
+    "Mentioned the absence of epilogue (no compensatory path)",
+    "Applied EPPM: identified high threat + absent efficacy",
+    "Named the outcome: fear control → rejection",
+    "Connected both frameworks (both predict failure)",
+    "Contrast example (e.g., Dove 'Cost of Beauty')",
+  ],
+  modelAnswer: "The Nationwide ad is unlikely to succeed as a persuasive attempt. Hamby and Brinberg (2016) found that positive endings in cautionary stories facilitate global reflection — a post-reading process of inferring the story's moral — which mediates stronger story-consistent beliefs. By using a negative ending (the child's death), the ad would produce negative affect that narrows cognitive processing and reduces global reflection on the safety message. Furthermore, the ad included no epilogue or explicit moral; Study 2 showed that an epilogue can compensate when the ending is negative, but Nationwide provided neither a positive ending nor an explicit message, leaving the audience in shock with no constructive path to the intended safety belief.\n\nFrom an EPPM perspective, the ad creates extremely high threat (child death = severity; household accidents = susceptibility) but provides zero efficacy — no recommended action (absent response efficacy), no guidance for parents (absent self-efficacy). High threat combined with low efficacy triggers fear control: the audience manages their fear emotion by rejecting the message rather than engaging in danger control. Both frameworks converge on the same prediction: persuasion failure. In contrast, Dove's 'Cost of Beauty' (2023) also used a negative ending (eating disorder) but included an epilogue (support the Kids Online Safety Act) and provided efficacy (specific legislative action), enabling both global reflection compensation and danger control.",
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  SHARED COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function ProgressBar({ completed, total, label }) {
+  const pct = Math.round((completed / total) * 100);
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {label && <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>{label}</p>}
+      <div style={{ background: C.rule, borderRadius: 4, height: 4, overflow: "hidden" }}>
+        <div style={{ background: `linear-gradient(90deg, ${C.gold}, ${C.green})`, height: "100%", width: `${pct}%`, borderRadius: 4, transition: "width 0.3s ease" }} />
+      </div>
+      <p style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{completed}/{total} ({pct}%)</p>
+    </div>
+  );
+}
+
+function SubTabBar({ tabs, active, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 0, marginBottom: 28, borderBottom: `1px solid ${C.rule}` }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onChange(t.id)} style={{
+          background: "transparent",
+          color: active === t.id ? C.fg : C.muted,
+          border: "none",
+          borderBottom: active === t.id ? `2px solid ${C.fg}` : "2px solid transparent",
+          padding: "10px 16px",
+          fontSize: 13,
+          fontWeight: active === t.id ? 600 : 400,
+        }}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Timer({ timeLeft }) {
+  const min = Math.floor(timeLeft / 60);
+  const sec = timeLeft % 60;
+  const isLow = timeLeft < 120;
+  return (
+    <span style={{
+      fontSize: 15,
+      fontWeight: 500,
+      color: isLow ? C.red : C.fg,
+      fontVariantNumeric: "tabular-nums",
+      background: C.timerBg,
+      padding: "4px 10px",
+      borderRadius: 6,
+    }}>
+      {String(min).padStart(2, "0")}:{String(sec).padStart(2, "0")}
+    </span>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STUDY TAB COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function ContentBlock({ block }) {
+  if (block.type === "define") {
+    return (
+      <div style={{ background: C.white, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "24px", marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>DEFINE</span>
+        <p style={{ fontSize: 15, lineHeight: 1.75, color: C.body, marginTop: 8 }}>{highlightText(block.text)}</p>
+      </div>
+    );
+  }
+  if (block.type === "mechanism") {
+    return (
+      <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "24px", marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>MECHANISM</span>
+        <p style={{ fontSize: 15, lineHeight: 1.75, color: C.body, marginTop: 8 }}>{highlightText(block.text)}</p>
+      </div>
+    );
+  }
+  if (block.type === "exam") {
+    return (
+      <div style={{ background: C.white, borderLeft: `3px solid ${C.fg}`, borderRadius: 0, padding: "24px", marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>EXAM POINT</span>
+        <p style={{ fontSize: 15, lineHeight: 1.75, color: C.body, marginTop: 8 }}>{highlightText(block.text)}</p>
+      </div>
+    );
+  }
+  if (block.type === "table") {
+    return (
+      <div style={{ overflowX: "auto", margin: "14px 0" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr>
+              {block.headers.map((h, i) => (
+                <th key={i} style={{ background: C.fg, color: C.white, border: `1px solid ${C.fg}`, padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 600, letterSpacing: 0.3 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((cell, ci) => (
+                  <td key={ci} style={{ border: `1px solid ${C.rule}`, padding: "10px 14px", color: ci === 0 ? C.fg : C.body, fontWeight: ci === 0 ? 600 : 400, lineHeight: 1.6, fontSize: 13, background: ri % 2 === 0 ? C.white : C.card }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  return null;
+}
+
+function StudyCard({ card }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={{ background: C.white, border: `1px solid ${C.rule}`, borderRadius: 8, marginBottom: 12, overflow: "hidden" }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", background: open ? C.card : C.white, border: "none", borderBottom: open ? `1px solid ${C.rule}` : "none",
+        padding: "14px 20px", display: "flex", alignItems: "center", textAlign: "left",
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: C.fg, flex: 1 }}>{card.title}</span>
+        <span style={{ fontSize: 11, color: C.muted, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", marginLeft: 12 }}>v</span>
+      </button>
+      {open && (
+        <div style={{ padding: "4px 20px 16px" }}>
+          {card.sections.map((block, i) => <ContentBlock key={i} block={block} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudyTab({ onNavigate }) {
+  const [activeChapter, setActiveChapter] = useState("ch11-12");
+  const [activeTopic, setActiveTopic] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+
+  const chapter = chapters.find(c => c.id === activeChapter);
+  const currentTopics = activeTopic ? chapter.topics.filter(t => t.id === activeTopic) : chapter.topics;
+
+  return (
+    <div style={{ display: "flex", minHeight: "calc(100vh - 45px)" }}>
+      {/* Sidebar */}
+      {sidebarOpen && (
+        <aside className={window.innerWidth <= 768 ? "sidebar-overlay" : ""} style={{
+          width: 240, minWidth: 240, background: C.white, borderRight: `1px solid ${C.rule}`,
+          display: "flex", flexDirection: "column", overflowY: "auto",
+        }}>
+          <div style={{ padding: "16px 16px 12px", borderBottom: `1px solid ${C.rule}` }}>
+            <p style={{ fontSize: 11, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}><a href="https://utexas.instructure.com/courses/1435649" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }} onMouseOver={e => e.target.style.textDecoration = "underline"} onMouseOut={e => e.target.style.textDecoration = "none"}>ADV 382J</a></p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: C.fg }}>Exam 2 Study Guide</p>
+          </div>
+          <nav style={{ flex: 1, padding: "4px 0" }}>
+            {chapters.map(ch => (
+              <div key={ch.id}>
+                <button onClick={() => { setActiveChapter(ch.id); setActiveTopic(null); }} style={{
+                  width: "100%", background: activeChapter === ch.id ? C.hover : "transparent",
+                  border: "none",
+                  padding: "9px 16px", textAlign: "left",
+                  fontSize: 13, fontWeight: activeChapter === ch.id ? 600 : 400,
+                  color: activeChapter === ch.id ? C.fg : C.muted,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: chapterColor[ch.id] || C.muted, flexShrink: 0 }} />
+                  {ch.label}: {ch.title.length > 20 ? ch.title.slice(0, 20) + "..." : ch.title}
+                </button>
+                {activeChapter === ch.id && ch.topics.map(t => (
+                  <button key={t.id} onClick={() => setActiveTopic(activeTopic === t.id ? null : t.id)} style={{
+                    width: "100%", background: activeTopic === t.id ? C.hover : "transparent",
+                    border: "none", padding: "6px 16px 6px 28px", textAlign: "left",
+                    fontSize: 12, fontWeight: activeTopic === t.id ? 500 : 400,
+                    color: activeTopic === t.id ? C.fg : C.faint, lineHeight: 1.5,
+                  }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </aside>
+      )}
+
+      {/* Main content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <header style={{ background: C.white, borderBottom: `1px solid ${C.rule}`, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+            background: "none", border: `1px solid ${C.rule}`, borderRadius: 6, padding: "4px 10px",
+            fontSize: 12, color: C.muted,
+          }}>
+            {sidebarOpen ? "«" : "»"}
+          </button>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: C.fg }}>{chapter.title}</h2>
+            <p style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>Review all 24 concepts organized by chapter. Click any card to expand.</p>
+          </div>
+        </header>
+        <main style={{ flex: 1, overflowY: "auto", padding: "24px 28px 48px", maxWidth: 680 }}>
+          {currentTopics.map(topic => (
+            <section key={topic.id} id={`topic-${topic.id}`} style={{ marginBottom: 32 }}>
+              <h3 style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14, paddingBottom: 8, borderBottom: `1px solid ${C.rule}` }}>
+                {topic.label}
+              </h3>
+              {topic.cards.map((card, i) => <StudyCard key={i} card={card} />)}
+            </section>
+          ))}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRILL TAB COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function DrillCard({ drill, onComplete }) {
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+
+  const handleCheck = () => {
+    setRevealed(true);
+    onComplete(drill.id, selected === drill.correct, drill.title);
+  };
+
+  return (
+    <div style={{ background: C.white, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "24px", marginBottom: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+        CHECK {String(drill.id).padStart(2, "0")}
+      </div>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: C.fg, marginBottom: 16 }}>{drill.title}</h3>
+      <p style={{ fontSize: 15, color: C.body, lineHeight: 1.75, marginBottom: 20 }}>{drill.scenario}</p>
+
+      {drill.options.map((opt, i) => {
+        let bg = C.card, border = C.rule, textColor = C.fg, leftBorder = "3px solid transparent";
+        if (revealed && i === drill.correct) { bg = C.correctBg; leftBorder = `3px solid ${C.green}`; }
+        else if (revealed && i === selected && i !== drill.correct) { bg = C.incorrectBg; leftBorder = `3px solid ${C.red}`; }
+        else if (!revealed && i === selected) { bg = C.hover; border = C.fg; }
+
+        return (
+          <button key={i} onClick={() => !revealed && setSelected(i)} style={{
+            display: "block", width: "100%", textAlign: "left",
+            background: bg, border: `1px solid ${border}`, borderLeft: leftBorder, borderRadius: 8,
+            padding: "14px 18px", marginBottom: 8,
+            fontSize: 15, color: textColor, lineHeight: 1.75,
+            cursor: revealed ? "default" : "pointer",
+          }}>
+            {opt}
+          </button>
+        );
+      })}
+
+      {!revealed && (
+        <button onClick={handleCheck} disabled={selected === null} style={{
+          background: selected !== null ? C.fg : C.faint,
+          color: C.white, border: "none", borderRadius: 6,
+          padding: "10px 24px", fontSize: 13, fontWeight: 500,
+          cursor: selected !== null ? "pointer" : "default", marginTop: 8, opacity: selected !== null ? 1 : 0.5,
+        }}>
+          Check Answer
+        </button>
+      )}
+
+      {revealed && (
+        <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "18px 24px", marginTop: 14 }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: C.red, letterSpacing: "0.05em", textTransform: "uppercase" }}>TRAP ALERT</span>
+          <p style={{ fontSize: 15, color: C.body, lineHeight: 1.75, marginTop: 6 }}>{highlightText(drill.trap)}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChainDiagram({ chain, onNavigate }) {
+  return (
+    <div style={{ background: C.white, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "20px 24px", marginBottom: 12 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: C.fg, marginBottom: 12 }}>
+        Chain {chain.id}: {chain.title}
+      </h3>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        {chain.nodes.map((node, i) => (
+          <React.Fragment key={i}>
+            <button
+              onClick={() => node.chapterId && onNavigate && onNavigate(node.chapterId, node.topicId)}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.rule}`,
+                borderRadius: 6, padding: "8px 14px", textAlign: "center",
+                cursor: node.chapterId ? "pointer" : "default",
+              }}
+              onMouseEnter={(e) => { if (node.chapterId) e.currentTarget.style.background = C.hover; }}
+              onMouseLeave={(e) => { if (node.chapterId) e.currentTarget.style.background = C.card; }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", display: "block" }}>{node.chapter}</span>
+              <p style={{ fontSize: 13, color: C.fg, margin: "3px 0 0" }}>{node.label}</p>
+            </button>
+            {i < chain.nodes.length - 1 && (
+              <span style={{ fontSize: 14, color: C.faint }}>→</span>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+      <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{chain.detail}</p>
+    </div>
+  );
+}
+
+function ChainsModal({ onClose, onNavigate }) {
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: C.white, borderRadius: 12, maxWidth: 720, width: "100%",
+        maxHeight: "80vh", overflowY: "auto", padding: "28px 32px",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.fg }}>Cross-Chapter Connections</h2>
+          <button onClick={onClose} style={{
+            background: "none", border: "none", fontSize: 20, color: C.muted, padding: "4px 8px",
+          }}>×</button>
+        </div>
+        <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>Click any node to jump to its concept card in the Study tab.</p>
+        {chainData.map(ch => <ChainDiagram key={ch.id} chain={ch} onNavigate={onNavigate} />)}
+      </div>
+    </div>
+  );
+}
+
+function DrillTab({ onNavigate, onComplete }) {
+  const [version, setVersion] = useState("v1");
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [answered, setAnswered] = useState({});
+  const [showChains, setShowChains] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const startTime = useRef(Date.now());
+
+  const activeDrills = drillVersions[version];
+  const completedCount = Object.keys(answered).length;
+  const correctCount = Object.values(answered).filter(Boolean).length;
+  const incorrectTitles = activeDrills.filter(d => answered[d.id] === false).map(d => d.title);
+
+  const switchVersion = (v) => {
+    setVersion(v);
+    setCurrentIdx(0);
+    setAnswered({});
+    setShowSummary(false);
+    startTime.current = Date.now();
+  };
+
+  const handleComplete = (id, wasCorrect, drillTitle) => {
+    const next = { ...answered, [id]: wasCorrect };
+    setAnswered(next);
+    if (Object.keys(next).length === 10 && onComplete) {
+      const correct = Object.values(next).filter(Boolean).length;
+      const wrong = activeDrills.filter(d => next[d.id] === false).map(d => d.title);
+      onComplete(correct, 10, wrong, Math.round((Date.now() - startTime.current) / 1000));
+    }
+  };
+
+  const goNext = () => {
+    if (currentIdx < 9) setCurrentIdx(currentIdx + 1);
+    else setShowSummary(true);
+  };
+  const goPrev = () => { if (currentIdx > 0) setCurrentIdx(currentIdx - 1); };
+
+  const versionLabels = [
+    { id: "v1", label: "Version 1", desc: "Foundation" },
+    { id: "v2", label: "Version 2", desc: "New angles" },
+    { id: "v3", label: "Version 3", desc: "Cross-chapter" },
+  ];
+
+  const VersionSelector = () => (
+    <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: `1px solid ${C.rule}` }}>
+      {versionLabels.map(v => (
+        <button key={v.id} onClick={() => switchVersion(v.id)} style={{
+          background: "none", border: "none",
+          borderBottom: version === v.id ? `2px solid ${C.gold}` : "2px solid transparent",
+          padding: "10px 16px", fontSize: 14,
+          fontWeight: version === v.id ? 600 : 400,
+          color: version === v.id ? C.fg : C.muted,
+        }}>
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (showSummary) {
+    return (
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 24px" }}>
+        <VersionSelector />
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: C.fg, marginBottom: 8 }}>Concept Check Complete</h3>
+          <p style={{ fontSize: 40, fontWeight: 700, color: correctCount >= 8 ? C.green : correctCount >= 5 ? C.gold : C.red, marginBottom: 24 }}>
+            {correctCount}/10
+          </p>
+          {incorrectTitles.length > 0 && (
+            <div style={{ textAlign: "left", maxWidth: 480, margin: "0 auto 24px" }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 10 }}>WEAK AREAS</p>
+              {incorrectTitles.map((t, i) => (
+                <p key={i} style={{ fontSize: 15, color: C.red, lineHeight: 1.75, padding: "4px 0" }}>• {t}</p>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setShowChains(true)} style={{
+            background: C.fg, color: C.white, border: "none", borderRadius: 6,
+            padding: "10px 24px", fontSize: 14, fontWeight: 500, marginBottom: 12,
+          }}>
+            See Cross-Chapter Connections
+          </button>
+          <br />
+          <button onClick={() => { setCurrentIdx(0); setAnswered({}); setShowSummary(false); startTime.current = Date.now(); }} style={{
+            background: "none", border: `1px solid ${C.rule}`, borderRadius: 6,
+            padding: "10px 24px", fontSize: 14, color: C.muted, marginTop: 8,
+          }}>
+            Retry All
+          </button>
+          {showChains && <ChainsModal onClose={() => setShowChains(false)} onNavigate={onNavigate} />}
+        </div>
+      </div>
+    );
+  }
+
+  const drill = activeDrills[currentIdx];
+  const isAnswered = answered[drill.id] !== undefined;
+
+  return (
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 24px" }}>
+      <VersionSelector />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: C.fg }}>{currentIdx + 1}/10</span>
+        <button onClick={() => setShowChains(true)} style={{
+          background: "none", border: "none", fontSize: 13, color: C.muted, padding: 0,
+        }}
+          onMouseEnter={(e) => e.currentTarget.style.color = C.fg}
+          onMouseLeave={(e) => e.currentTarget.style.color = C.muted}
+        >
+          Cross-Chapter Connections →
+        </button>
+      </div>
+
+      <ProgressBar completed={completedCount} total={10} label="PROGRESS" />
+
+      <DrillCard key={`${version}-${drill.id}`} drill={drill} onComplete={handleComplete} />
+
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <button onClick={goPrev} disabled={currentIdx === 0} style={{
+          background: "none", border: `1px solid ${C.rule}`, borderRadius: 6,
+          padding: "8px 20px", fontSize: 13, color: C.muted,
+          cursor: currentIdx > 0 ? "pointer" : "default", opacity: currentIdx > 0 ? 1 : 0.3,
+        }}>
+          Previous
+        </button>
+        <button onClick={goNext} disabled={!isAnswered} style={{
+          background: isAnswered ? C.fg : C.faint, color: C.white, border: "none", borderRadius: 6,
+          padding: "8px 20px", fontSize: 13, fontWeight: 500,
+          cursor: isAnswered ? "pointer" : "default", opacity: isAnswered ? 1 : 0.5,
+        }}>
+          {currentIdx < 9 ? "Next" : "See Results"}
+        </button>
+      </div>
+
+      {showChains && <ChainsModal onClose={() => setShowChains(false)} onNavigate={onNavigate} />}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXAM SIM TAB COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function MCQuiz({ onScoreUpdate }) {
+  const [started, setStarted] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(20 * 60);
+  const mcStartTime = useRef(null);
+
+  const startQuiz = () => {
+    const shuffled = [...mcQuestions].sort(() => Math.random() - 0.5).slice(0, 8);
+    setQuestions(shuffled);
+    setAnswers({});
+    setCurrent(0);
+    setFinished(false);
+    setShowExplanation(false);
+    setTimeLeft(20 * 60);
+    mcStartTime.current = Date.now();
+    setStarted(true);
+  };
+
+  useEffect(() => {
+    if (!started || finished) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(timer); setFinished(true); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [started, finished]);
+
+  if (!started) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px" }}>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: C.fg, marginBottom: 12 }}>Multiple Choice Practice</h3>
+        <p style={{ fontSize: 14, color: C.muted, marginBottom: 6, lineHeight: 1.7 }}>8 randomly selected questions from a bank of {mcQuestions.length}.</p>
+        <p style={{ fontSize: 14, color: C.muted, marginBottom: 28, lineHeight: 1.7 }}>Timer: 20 minutes. Immediate feedback after each answer.</p>
+        <button onClick={startQuiz} style={{
+          background: C.fg, color: C.white, border: "none", borderRadius: 6,
+          padding: "12px 32px", fontSize: 14, fontWeight: 500,
+        }}>
+          Start Quiz
+        </button>
+      </div>
+    );
+  }
+
+  const [reviewMode, setReviewMode] = useState(false);
+
+  if (finished) {
+    const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct ? 1 : 0), 0);
+    const byChapter = {};
+    questions.forEach(q => {
+      if (!byChapter[q.chapter]) byChapter[q.chapter] = { correct: 0, total: 0 };
+      byChapter[q.chapter].total++;
+      if (answers[q.id] === q.correct) byChapter[q.chapter].correct++;
+    });
+    const mistakes = questions.filter(q => answers[q.id] !== q.correct);
+
+    const elapsed = mcStartTime.current ? Math.round((Date.now() - mcStartTime.current) / 1000) : 0;
+    if (onScoreUpdate) onScoreUpdate(score, 8, byChapter, elapsed);
+
+    if (reviewMode && mistakes.length > 0) {
+      return (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: C.fg }}>Review Mistakes ({mistakes.length})</h3>
+            <button onClick={() => setReviewMode(false)} style={{
+              background: "none", border: `1px solid ${C.rule}`, borderRadius: 6,
+              padding: "6px 16px", fontSize: 13, color: C.muted,
+            }}>Back to Score</button>
+          </div>
+          {mistakes.map((q, idx) => (
+            <div key={q.id} style={{ background: C.white, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "24px", marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>{q.chapter}</div>
+              <p style={{ fontSize: 15, color: C.fg, lineHeight: 1.75, marginBottom: 16 }}>{q.question}</p>
+              {q.options.map((opt, i) => (
+                <div key={i} style={{
+                  padding: "10px 16px", marginBottom: 6, borderRadius: 8, fontSize: 15, lineHeight: 1.75,
+                  background: i === q.correct ? C.correctBg : i === answers[q.id] ? C.incorrectBg : C.card,
+                  borderLeft: i === q.correct ? `3px solid ${C.green}` : i === answers[q.id] ? `3px solid ${C.red}` : "3px solid transparent",
+                }}>
+                  {opt} {i === q.correct && "✓"} {i === answers[q.id] && i !== q.correct && "✗"}
+                </div>
+              ))}
+              <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "14px 18px", marginTop: 12 }}>
+                <p style={{ fontSize: 14, color: C.body, lineHeight: 1.75 }}>{highlightText(q.explanation)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ padding: "40px 20px", textAlign: "center" }}>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: C.fg, marginBottom: 8 }}>Quiz Complete</h3>
+        <p style={{ fontSize: 40, fontWeight: 700, color: score >= 6 ? C.green : score >= 4 ? C.gold : C.red, marginBottom: 24 }}>{score}/8</p>
+        <div style={{ maxWidth: 400, margin: "0 auto", textAlign: "left" }}>
+          {Object.entries(byChapter).map(([ch, data]) => (
+            <div key={ch} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.rule}` }}>
+              <span style={{ fontSize: 14, color: C.fg }}>{ch}</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: data.correct === data.total ? C.green : C.red }}>{data.correct}/{data.total}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 28 }}>
+          {mistakes.length > 0 && (
+            <button onClick={() => setReviewMode(true)} style={{
+              background: "none", border: `1px solid ${C.rule}`, borderRadius: 6,
+              padding: "10px 24px", fontSize: 13, fontWeight: 500, color: C.fg,
+            }}>
+              Review Mistakes
+            </button>
+          )}
+          <button onClick={() => { setReviewMode(false); startQuiz(); }} style={{
+            background: C.fg, color: C.white, border: "none", borderRadius: 6,
+            padding: "10px 24px", fontSize: 13, fontWeight: 500,
+          }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const q = questions[current];
+  const answered = answers[q.id] !== undefined;
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <span style={{ fontSize: 13, color: C.muted }}>Q{current + 1} of {questions.length}</span>
+        <Timer timeLeft={timeLeft} />
+      </div>
+
+      <div style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>{q.chapter}</div>
+      <p style={{ fontSize: 15, color: C.fg, lineHeight: 1.8, marginBottom: 24 }}>{q.question}</p>
+
+      {q.options.map((opt, i) => {
+        let bg = C.card, border = C.rule, leftBorder = "3px solid transparent";
+        if (answered && i === q.correct) { bg = C.correctBg; leftBorder = `3px solid ${C.green}`; }
+        else if (answered && i === answers[q.id] && i !== q.correct) { bg = C.incorrectBg; leftBorder = `3px solid ${C.red}`; }
+
+        return (
+          <button key={i} onClick={() => {
+            if (!answered) {
+              setAnswers(prev => ({ ...prev, [q.id]: i }));
+              setShowExplanation(true);
+            }
+          }} style={{
+            display: "block", width: "100%", textAlign: "left",
+            background: bg, border: `1px solid ${border}`, borderLeft: leftBorder, borderRadius: 8,
+            padding: "14px 18px", marginBottom: 8,
+            fontSize: 15, color: C.fg, lineHeight: 1.75,
+            cursor: answered ? "default" : "pointer",
+          }}
+            onMouseEnter={(e) => { if (!answered) e.currentTarget.style.background = C.hover; }}
+            onMouseLeave={(e) => { if (!answered) e.currentTarget.style.background = C.card; }}
+          >
+            {opt}
+          </button>
+        );
+      })}
+
+      {answered && (
+        <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "14px 18px", marginTop: 12, marginBottom: 16 }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>EXPLANATION</span>
+          <p style={{ fontSize: 15, color: C.body, lineHeight: 1.75, marginTop: 6 }}>{highlightText(q.explanation)}</p>
+          {answers[q.id] !== q.correct && (
+            <button onClick={() => { setAnswers(prev => { const next = { ...prev }; delete next[q.id]; return next; }); setShowExplanation(false); }} style={{
+              background: "none", border: `1px solid ${C.rule}`, borderRadius: 6,
+              padding: "6px 16px", fontSize: 13, color: C.muted, marginTop: 10,
+            }}>
+              Try Again
+            </button>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <button onClick={() => { setCurrent(Math.max(0, current - 1)); setShowExplanation(false); }}
+          disabled={current === 0}
+          style={{ background: "none", border: `1px solid ${C.rule}`, borderRadius: 6, padding: "8px 20px", fontSize: 13, color: C.muted, cursor: current > 0 ? "pointer" : "default", opacity: current > 0 ? 1 : 0.3 }}>
+          Prev
+        </button>
+        {current < questions.length - 1 ? (
+          <button onClick={() => { setCurrent(current + 1); setShowExplanation(false); }}
+            style={{ background: C.fg, color: C.white, border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500 }}>
+            Next
+          </button>
+        ) : (
+          <button onClick={() => setFinished(true)}
+            style={{ background: C.fg, color: C.white, border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500 }}>
+            Finish
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SAPromptComponent({ onSaSubmit }) {
+  const [started, setStarted] = useState(false);
+  const [text, setText] = useState("");
+  const [timeLeft, setTimeLeft] = useState(8 * 60);
+  const [submitted, setSubmitted] = useState(false);
+  const [checks, setChecks] = useState(Array(7).fill(false));
+
+  useEffect(() => {
+    if (!started || submitted) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(timer); setSubmitted(true); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [started, submitted]);
+
+  if (!started) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px" }}>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: C.fg, marginBottom: 12 }}>Short Answer Practice</h3>
+        <p style={{ fontSize: 14, color: C.muted, marginBottom: 6, lineHeight: 1.7 }}>The Nationwide Question (professor-confirmed exam topic).</p>
+        <p style={{ fontSize: 14, color: C.muted, marginBottom: 28, lineHeight: 1.7 }}>Timer: 8 minutes. After submission: model answer + rubric checklist.</p>
+        <button onClick={() => setStarted(true)} style={{
+          background: C.fg, color: C.white, border: "none", borderRadius: 6,
+          padding: "12px 32px", fontSize: 14, fontWeight: 500,
+        }}>
+          Start SA Practice
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase" }}>NATIONWIDE AD — CONFIRMED EXAM QUESTION</span>
+        {!submitted && <Timer timeLeft={timeLeft} />}
+      </div>
+
+      <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "18px 22px", marginBottom: 20 }}>
+        <p style={{ fontSize: 15, color: C.fg, lineHeight: 1.8 }}>{saPrompt.prompt}</p>
+      </div>
+
+      {!submitted ? (
+        <>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Write your answer here..."
+            style={{
+              width: "100%", minHeight: 220, padding: "16px 18px",
+              border: `1px solid ${C.rule}`, borderRadius: 8,
+              fontSize: 14, lineHeight: 1.8,
+              color: C.fg, background: C.white, outline: "none",
+            }}
+          />
+          <button onClick={() => { setSubmitted(true); if (onSaSubmit) onSaSubmit(true, []); }} style={{
+            background: C.fg, color: C.white, border: "none", borderRadius: 6,
+            padding: "10px 24px", fontSize: 13, fontWeight: 500, marginTop: 12,
+          }}>
+            Submit Answer
+          </button>
+        </>
+      ) : (
+        <>
+          {text && (
+            <div style={{ marginBottom: 24 }}>
+              <h4 style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>YOUR ANSWER</h4>
+              <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "14px 18px" }}>
+                <p style={{ fontSize: 14, color: C.body, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{text}</p>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 12 }}>SELF-SCORE RUBRIC</h4>
+            {saPrompt.rubric.map((item, i) => (
+              <label key={i} style={{
+                display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0",
+                borderBottom: `1px solid ${C.rule}`, cursor: "pointer",
+              }}>
+                <input type="checkbox" checked={checks[i]} onChange={() => {
+                  const next = [...checks];
+                  next[i] = !next[i];
+                  setChecks(next);
+                  if (onSaSubmit) {
+                    const checkedItems = saPrompt.rubric.filter((_, j) => next[j]);
+                    onSaSubmit(true, checkedItems);
+                  }
+                }} style={{ marginTop: 3 }} />
+                <span style={{ fontSize: 14, color: C.fg, lineHeight: 1.6 }}>{item}</span>
+              </label>
+            ))}
+            <p style={{ fontSize: 13, fontWeight: 500, color: C.fg, marginTop: 10 }}>
+              Self-score: {checks.filter(Boolean).length}/{checks.length}
+            </p>
+          </div>
+
+          {checks.filter(Boolean).length > 0 && (
+            <div>
+              <h4 style={{ fontSize: 12, fontWeight: 500, color: C.green, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>MODEL ANSWER</h4>
+              <div style={{ background: C.card, borderLeft: `3px solid ${C.green}`, borderRadius: 0, padding: "24px" }}>
+                <p style={{ fontSize: 15, color: C.body, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{saPrompt.modelAnswer}</p>
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => { setStarted(false); setText(""); setSubmitted(false); setTimeLeft(8 * 60); setChecks(Array(7).fill(false)); }} style={{
+            background: C.fg, color: C.white, border: "none", borderRadius: 6,
+            padding: "10px 24px", fontSize: 13, fontWeight: 500, marginTop: 20,
+          }}>
+            Retry
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ScoreDashboard({ drillCompleted, mcScore, mcTotal, mcChapterBreakdown }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 8, padding: "20px 24px", marginBottom: 24 }}>
+      <h3 style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>SCORE DASHBOARD</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ background: C.white, borderRadius: 8, padding: "14px 18px", border: `1px solid ${C.rule}` }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>CONCEPT CHECKS</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: drillCompleted === 10 ? C.green : C.fg }}>{drillCompleted}/10</p>
+        </div>
+        <div style={{ background: C.white, borderRadius: 8, padding: "14px 18px", border: `1px solid ${C.rule}` }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>LAST MC SCORE</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: mcScore !== null ? (mcScore >= 6 ? C.green : mcScore >= 4 ? C.gold : C.red) : C.faint }}>
+            {mcScore !== null ? `${mcScore}/${mcTotal}` : "—"}
+          </p>
+        </div>
+      </div>
+      {mcChapterBreakdown && Object.keys(mcChapterBreakdown).length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>CHAPTER BREAKDOWN</p>
+          {Object.entries(mcChapterBreakdown).map(([ch, data]) => {
+            const pct = Math.round((data.correct / data.total) * 100);
+            return (
+              <div key={ch} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 12, color: C.fg, width: 80 }}>{ch}</span>
+                <div style={{ flex: 1, background: C.rule, borderRadius: 3, height: 4 }}>
+                  <div style={{ background: pct >= 75 ? C.green : pct >= 50 ? C.gold : C.red, height: "100%", width: `${pct}%`, borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, width: 35, textAlign: "right" }}>{data.correct}/{data.total}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExamSimTab({ drillCompleted, mcScore, mcTotal, mcChapterBreakdown, onMcScoreUpdate, onSaSubmit }) {
+  const [mode, setMode] = useState("mc");
+
+  return (
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 24px" }}>
+      <p style={{ fontSize: 15, color: C.muted, marginBottom: 20, lineHeight: 1.75 }}>
+        Timed practice: 8 MC questions (20 min) + the Nationwide SA prompt (8 min).
+      </p>
+
+      <ScoreDashboard drillCompleted={drillCompleted} mcScore={mcScore} mcTotal={mcTotal} mcChapterBreakdown={mcChapterBreakdown} />
+
+      <SubTabBar
+        tabs={[
+          { id: "mc", label: "MC Practice" },
+          { id: "sa", label: "SA Practice" },
+        ]}
+        active={mode}
+        onChange={setMode}
+      />
+
+      {mode === "mc" ? <MCQuiz onScoreUpdate={onMcScoreUpdate} /> : <SAPromptComponent onSaSubmit={onSaSubmit} />}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FIREBASE ANALYTICS HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+async function submitToFirestore(data) {
+  try {
+    const db = window._db;
+    if (!db) return;
+    await db.collection("sessions").add({
+      sessionId: SESSION_ID,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      ...data,
+    });
+  } catch (e) {
+    console.warn("Firestore submit failed:", e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  APP — Top-level with TabBar
+// ═══════════════════════════════════════════════════════════════
+
+function TabBar({ active, onChange }) {
+  const tabs = [
+    { id: "home", label: "Home" },
+    { id: "study", label: "Study" },
+    { id: "concept", label: "Concept Check" },
+    { id: "exam", label: "Exam Simulator" },
+  ];
+  return (
+    <header style={{
+      background: C.white, padding: "0 24px", position: "sticky", top: 0, zIndex: 100,
+      borderBottom: `1px solid ${C.rule}`,
+    }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 0 }}>
+        <h1 style={{ fontSize: 15, fontWeight: 600, color: C.fg, padding: "12px 0", marginRight: 32, whiteSpace: "nowrap" }}>
+          <a href="https://utexas.instructure.com/courses/1435649" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }} onMouseOver={e => e.target.style.textDecoration = "underline"} onMouseOut={e => e.target.style.textDecoration = "none"}>ADV 382J</a>
+        </h1>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => onChange(t.id)} style={{
+            background: "none", border: "none",
+            borderBottom: active === t.id ? `2px solid ${C.gold}` : "2px solid transparent",
+            padding: "12px 12px", fontSize: 13, fontWeight: active === t.id ? 500 : 400,
+            color: active === t.id ? C.fg : C.muted,
+            whiteSpace: "nowrap",
+          }}>
+            {t.label}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button className="no-print" onClick={() => window.print()} style={{
+          background: "none", border: "none", padding: "6px 12px",
+          fontSize: 13, color: C.muted,
+        }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = C.hover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+        >
+          Print
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function WelcomeBanner({ onGoTo }) {
+  const rows = [
+    { id: "concept", label: "Concept Check", desc: "Practice distinguishing similar concepts", dot: C.gold },
+    { id: "study", label: "Study", desc: "Review all 24 concepts by chapter", dot: C.blue },
+    { id: "exam", label: "Exam Simulator", desc: "Timed MC + SA practice", dot: C.red },
+  ];
+
+  const covered = [
+    { label: "Ch 11-12 Source Factors", color: chapterColor["ch11-12"] },
+    { label: "Ch 13 Message", color: chapterColor["ch13"] },
+    { label: "Ch 14 Fear & Guilt", color: chapterColor["ch14"] },
+    { label: "Hamby & Brinberg (2016)", color: chapterColor["article"] },
+  ];
+
+  return (
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 24px 20px" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: C.fg, marginBottom: 8 }}>Exam 2 Study Guide</h1>
+      <p style={{ fontSize: 15, color: C.muted, marginBottom: 4, lineHeight: 1.75 }}><a href="https://utexas.instructure.com/courses/1435649" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }} onMouseOver={e => e.target.style.textDecoration = "underline"} onMouseOut={e => e.target.style.textDecoration = "none"}>ADV 382J</a> · Dr. Oh · March 23, 10:00 AM</p>
+      <p style={{ fontSize: 15, color: C.muted, marginBottom: 32, lineHeight: 1.75 }}>16 MC (0.25 pt) + 6 SA (1 pt) · Closed-book</p>
+
+      <div style={{ borderTop: `1px solid ${C.rule}`, marginBottom: 32 }} />
+
+      <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 16 }}>Where to start</p>
+
+      {rows.map((r, i) => (
+        <button key={r.id} onClick={() => onGoTo(r.id)} style={{
+          display: "flex", alignItems: "center", gap: 12, width: "100%",
+          background: "none", border: "none", borderBottom: i < rows.length - 1 ? `1px solid ${C.rule}` : "none",
+          padding: "14px 0", textAlign: "left",
+        }}
+          onMouseEnter={(e) => e.currentTarget.querySelector(".row-label").style.color = C.gold}
+          onMouseLeave={(e) => e.currentTarget.querySelector(".row-label").style.color = C.fg}
+        >
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: r.dot, flexShrink: 0 }} />
+          <span className="row-label" style={{ fontSize: 15, fontWeight: 500, color: C.fg, transition: "color 0.15s", flex: 1 }}>{r.label}</span>
+          <span style={{ fontSize: 14, color: C.muted }}>{r.desc}</span>
+        </button>
+      ))}
+
+      <div style={{ borderTop: `1px solid ${C.rule}`, margin: "32px 0" }} />
+
+      <p style={{ fontSize: 12, fontWeight: 500, color: C.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 12 }}>What's covered</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+        {covered.map(c => (
+          <span key={c.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: C.muted, lineHeight: 1.7 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.color }} />
+            {c.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [tab, setTab] = useState("home");
+  const [studyChapter, setStudyChapter] = useState(null);
+  const [studyTopic, setStudyTopic] = useState(null);
+  const [drillCompleted, setDrillCompleted] = useState(0);
+  const [mcScore, setMcScore] = useState(null);
+  const [mcTotal, setMcTotal] = useState(null);
+  const [mcChapterBreakdown, setMcChapterBreakdown] = useState(null);
+  const sessionStart = useRef(Date.now());
+
+  const handleChainNavigate = (chapterId, topicId) => {
+    if (chapterId) {
+      setStudyChapter(chapterId);
+      setStudyTopic(topicId);
+      setTab("study");
+    }
+  };
+
+  const handleMcScoreUpdate = (score, total, breakdown, timeSpent) => {
+    setMcScore(score);
+    setMcTotal(total);
+    setMcChapterBreakdown(breakdown);
+    const incorrectByChapter = {};
+    Object.entries(breakdown).forEach(([ch, d]) => {
+      if (d.correct < d.total) incorrectByChapter[ch] = d.total - d.correct;
+    });
+    submitToFirestore({
+      mcQuiz: { score, total, incorrectByChapter, timeSpent },
+    });
+  };
+
+  const handleConceptCheckDone = useCallback((score, total, incorrectPairs, timeSpent) => {
+    setDrillCompleted(score);
+    submitToFirestore({
+      conceptCheck: { score, total, incorrectPairs, timeSpent },
+    });
+  }, []);
+
+  const handleSaSubmit = useCallback((attempted, rubricChecked) => {
+    submitToFirestore({ saAttempted: attempted, saRubricChecked: rubricChecked });
+  }, []);
+
+  // Submit total time on unload
+  useEffect(() => {
+    const handleUnload = () => {
+      const totalTime = Math.round((Date.now() - sessionStart.current) / 1000);
+      submitToFirestore({ totalTimeOnSite: totalTime });
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []);
+
+  return (
+    <div style={{ background: C.white, minHeight: "100vh" }}>
+      <TabBar active={tab} onChange={setTab} />
+      {tab === "home" && <WelcomeBanner onGoTo={setTab} />}
+      {tab === "study" && <StudyTab onNavigate={handleChainNavigate} initialChapter={studyChapter} initialTopic={studyTopic} />}
+      {tab === "concept" && <DrillTab onNavigate={handleChainNavigate} onComplete={handleConceptCheckDone} />}
+      {tab === "exam" && <ExamSimTab drillCompleted={drillCompleted} mcScore={mcScore} mcTotal={mcTotal} mcChapterBreakdown={mcChapterBreakdown} onMcScoreUpdate={handleMcScoreUpdate} onSaSubmit={handleSaSubmit} />}
+
+      <footer style={{ textAlign: "center", padding: "28px 24px", fontSize: 12, color: "#9CA3AF", borderTop: `1px solid ${C.rule}`, marginTop: 40 }}>
+        Bella Kang | mk42555 · <a href="https://utexas.instructure.com/courses/1435649" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }} onMouseOver={e => e.target.style.textDecoration = "underline"} onMouseOut={e => e.target.style.textDecoration = "none"}>ADV 382J</a> Spring 2026
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
 </html>
