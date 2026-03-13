@@ -15,11 +15,14 @@
       c.width = 32; c.height = 32;
       var x = c.getContext("2d");
       x.beginPath();
-      x.roundRect(0, 0, 32, 32, 6);
-      x.fillStyle = "#FFFFFF";
+      x.arc(16, 16, 15, 0, Math.PI * 2);
+      x.fillStyle = "#011F5B";
       x.fill();
-      x.font = "700 20px 'Plus Jakarta Sans', sans-serif";
-      x.fillStyle = "#D97706";
+      x.strokeStyle = "#A00000";
+      x.lineWidth = 2;
+      x.stroke();
+      x.font = "700 18px 'Plus Jakarta Sans', sans-serif";
+      x.fillStyle = "#FFFFFF";
       x.textAlign = "center";
       x.textBaseline = "middle";
       x.fillText("A", 16, 17);
